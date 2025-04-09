@@ -1,5 +1,7 @@
 using System.Text;
 using Aniyuu.DbContext;
+using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.Services.UserServices;
 using Aniyuu.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -18,7 +20,7 @@ public sealed class ServiceCaller
 
     private static void ScopedServices(IServiceCollection services)
     {
-        
+        services.AddScoped<IUserService, UserService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
