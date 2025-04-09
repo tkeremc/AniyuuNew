@@ -12,8 +12,8 @@ public class RefreshTokenModel
     public string? RefreshToken { get; set; }
     public DateTime Expiration { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool? IsRevoked { get; set; }
-    public bool? IsUsed { get; set; }
+    public bool? IsRevoked { get; set; }  = false;
+    public bool? IsUsed { get; set; }  = false;
     public string? Ip { get; set; }
     public string? DeviceId { get; set; }
 }

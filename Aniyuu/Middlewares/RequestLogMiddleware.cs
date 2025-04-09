@@ -16,7 +16,6 @@ public class RequestLogMiddleware(RequestDelegate next, IMongoDbContext mongoDbC
 
         var log = new RequestLogModel
         {
-            CreatedAt = DateTime.UtcNow,
             Method = request.Method,
             Path = request.Path,
             UserId = context.Request.Headers["X-User-Id"].FirstOrDefault(),

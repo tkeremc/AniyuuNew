@@ -11,12 +11,12 @@ public class UserModel : BaseModel
     public string? FullName { get; set; }
     public string? Username { get; set; }
     public string? Email { get; set; }
-    public string? ProfilePhoto { get; set; } = "";
+    public string? ProfilePhoto { get; set; } = "not set";
     public int? WatchTime { get; set; } = 0;
     public string? Gender { get; set; } = "not set";
     public string? HashedPassword { get; set; }
     public bool? IsActive { get; set; } = true;
     public bool? IsBanned { get; set; }  = false;
-    public List<string>? Roles { get; set; } = [("user")];
-    public List<string>? Devices { get; set; }
+    public List<string>? Roles { get; set; } = ["user"];
+    public List<string>? Devices { get; set; } = [];
 }

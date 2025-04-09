@@ -33,7 +33,6 @@
     <ItemGroup>
       <Folder Include="Controllers\" />
       <Folder Include="Mappers\" />
-      <Folder Include="ViewModels\" />
     </ItemGroup>
 
 </Project>
