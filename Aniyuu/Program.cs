@@ -1,25 +1,55 @@
+using Aniyuu.Authentication;
+using Aniyuu.Middlewares;
+using Aniyuu.Services;
+
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+var logger = NLog.Web.NLogBuilder.ConfigureNLog("NLog.config").GetCurrentClassLogger();
+ConfigureServices(builder);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
+ConfigureApp(app);
+logger.Info("Application started");
 
 app.Run();
+
+void ConfigureServices(WebApplicationBuilder builder)
+{
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+    builder.Services.AddControllers();
+    builder.Services.AddHttpContextAccessor();
+    builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("CorsApi",
+            policy => policy
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+    });
+    
+    
+    ServiceCaller.RegisterServices(builder.Services);
+}
+
+void ConfigureApp(WebApplication app)
+{
+    app.UseSwagger(); 
+    app.UseSwaggerUI();
+    
+    app.UseMiddleware<CountryRestrictionMiddleware>();
+    app.UseMiddleware<TokenAuthenticationHandler>();
+    app.UseMiddleware<RequestLogMiddleware>();
+    app.UseMiddleware<ExceptionMiddleware>();
+    
+    
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
+    
+    app.UseCors("CorsApi");
+}
