@@ -9,19 +9,20 @@ using NLog;
 
 namespace Aniyuu.Services.UserServices;
 
-public class UserService(IMongoDbContext mongoDbContext) : IUserService
+public class UserService(IMongoDbContext mongoDbContext,
+    ICurrentUserService currentUserService) : IUserService
 {
     private readonly IMongoCollection<UserModel> _userCollection = mongoDbContext
         .GetCollection<UserModel>(AppSettingConfig.Configuration["MongoDBSettings:UserCollection"]!);
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
-    public async Task<UserModel> Get(string userId, CancellationToken cancellationToken)
+    public async Task<UserModel> Get(CancellationToken cancellationToken)
     {
-        var user = await _userCollection.Find(x => x.Id == userId)
+        var user = await _userCollection.Find(x => x.Id == currentUserService.GetUserId())
             .FirstOrDefaultAsync(cancellationToken);
         if (user is null)
         {
-            Logger.Error($"[UserService.Get] User not found. UserId: {userId}");
+            Logger.Error($"[UserService.Get] User not found. UserId: {currentUserService.GetUserId()}");
             throw new AppException("User not found",404);
         }
         return user;
@@ -42,7 +43,7 @@ public class UserService(IMongoDbContext mongoDbContext) : IUserService
 
     public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken)
     {
-        var existedUserModel = await Get(updatedUserModel.Id, cancellationToken);
+        var existedUserModel = await Get(cancellationToken);
         updatedUserModel.UpdatedAt = DateTime.UtcNow;
         updatedUserModel =  UpdateCheckHelper.ReplaceNullToOldValues(existedUserModel,updatedUserModel);
         try
@@ -65,7 +66,7 @@ public class UserService(IMongoDbContext mongoDbContext) : IUserService
 
     public async Task<bool> Delete(string userId, CancellationToken cancellationToken)
     {
-        var user = await Get(userId, cancellationToken);
+        var user = await Get(cancellationToken);
         user.IsDeleted = true;
         var deletedUser = await Update(user, cancellationToken);
         if (user.IsDeleted == deletedUser.IsDeleted)
@@ -78,7 +79,7 @@ public class UserService(IMongoDbContext mongoDbContext) : IUserService
 
     public async Task<bool> ChangePassword(string userId, string oldPassword, string newPassword, CancellationToken cancellationToken)
     {
-        var user = await Get(userId, cancellationToken);
+        var user = await Get(cancellationToken);
 
         if (!BCrypt.Net.BCrypt.Verify(oldPassword, user.HashedPassword))
         {

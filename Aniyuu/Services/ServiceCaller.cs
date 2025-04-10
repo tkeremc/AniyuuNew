@@ -21,6 +21,7 @@ public sealed class ServiceCaller
     private static void ScopedServices(IServiceCollection services)
     {
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
