@@ -52,49 +52,70 @@ public class EmailService(IActivationService activationService) : IEmailService
         }
         catch (Exception e)
         {
-            Logger.Error("[EmailService/SendEmail] Error during sending email");
+            Logger.Error("[EmailService.SendEmail] Error during sending email");
             throw new AppException("Server error occurred on sending email", 500);
         }
     }
 
     public async Task SendWelcomeEmail(string email, string username, CancellationToken cancellationToken)
     {
-        await SendEmail(
-            to: email,
-            subject: "Aniyuu'ya Hoş Geldin!",
-            templateName: "WelcomeEmail",
-            placeholders: new Dictionary<string, string>
-            {
-                { "username", username },
-                { "email", email },
-                { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
-            });
+        try
+        {
+            await SendEmail(
+                to: email,
+                subject: "Aniyuu'ya Hoş Geldin!",
+                templateName: "WelcomeEmail",
+                placeholders: new Dictionary<string, string>
+                {
+                    { "username", username },
+                    { "email", email },
+                    { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
+                });
+        }
+        catch (Exception e)
+        {
+            Logger.Error("[EmailService.SendWelcomeEmail] Error during sending email");
+        }
     }
 
     public async Task ResendConfirmationEmail(string email, string username, CancellationToken cancellationToken)
     {
-        await SendEmail(
-            to: email,
-            subject: "Aniyuu Hesabınızı doğrulayın!",
-            templateName: "ActivationCodeEmail",
-            placeholders: new Dictionary<string, string>
-            {
-                { "username", username },
-                { "email", email },
-                { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
-            });
+        try
+        {
+            await SendEmail(
+                to: email,
+                subject: "Aniyuu Hesabınızı doğrulayın!",
+                templateName: "ActivationCodeEmail",
+                placeholders: new Dictionary<string, string>
+                {
+                    { "username", username },
+                    { "email", email },
+                    { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
+                });
+        }
+        catch (Exception e)
+        {
+            Logger.Error("[EmailService.ResendConfirmationEmail] Error during sending email");
+        }
     }
 
     public async Task PasswordResetEmail(string email, string username, CancellationToken cancellationToken)
     {
-        await SendEmail(
-            to: email,
-            subject: "Şifre değiştirme talebiniz",
-            templateName: "WelcomeEmail",
-            placeholders: new Dictionary<string, string>
-            {
-                { "username", username },
-                { "email", email },
-            });
+        try
+        {
+            await SendEmail(
+                to: email,
+                subject: "Şifre değiştirme talebiniz",
+                templateName: "WelcomeEmail",
+                placeholders: new Dictionary<string, string>
+                {
+                    { "username", username },
+                    { "email", email },
+                });
+        }
+        catch (Exception e)
+        {
+            Logger.Error("[EmailService.PasswordResetEmail] Error during sending email");
+        }
     }
 }
