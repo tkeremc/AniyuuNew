@@ -64,26 +64,26 @@ public class UserService(IMongoDbContext mongoDbContext,
         return updatedUserModel;
     }
 
-    public async Task<bool> Delete(string userId, CancellationToken cancellationToken)
+    public async Task<bool> Delete(CancellationToken cancellationToken)
     {
         var user = await Get(cancellationToken);
         user.IsDeleted = true;
         var deletedUser = await Update(user, cancellationToken);
         if (user.IsDeleted == deletedUser.IsDeleted)
         {
-            Logger.Error($"[UserService.Delete] User ({userId}){user.Username} is not deleted");
+            Logger.Error($"[UserService.Delete] User ({user.Id}){user.Username} is not deleted");
             throw new AppException("User is not deleted", 500);
         }
         return true;
     }
 
-    public async Task<bool> ChangePassword(string userId, string oldPassword, string newPassword, CancellationToken cancellationToken)
+    public async Task<bool> ChangePassword(string oldPassword, string newPassword, CancellationToken cancellationToken)
     {
         var user = await Get(cancellationToken);
 
         if (!BCrypt.Net.BCrypt.Verify(oldPassword, user.HashedPassword))
         {
-            Logger.Error($"[UserService.ChangePassword] Incorrect current password for UserId: {userId}");
+            Logger.Error($"[UserService.ChangePassword] Incorrect current password for UserId: {user.Id}");
             throw new AppException("password is wrong", 401);
         }
 

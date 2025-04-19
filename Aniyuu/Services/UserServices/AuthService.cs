@@ -10,7 +10,12 @@ using NLog;
 
 namespace Aniyuu.Services.UserServices;
 
-public class AuthService(CurrentUserService currentUserService, IMongoDbContext mongoDbContext, ITokenService tokenService, IEmailService emailService) : IAuthService
+public class AuthService(
+    ICurrentUserService currentUserService, 
+    IMongoDbContext mongoDbContext, 
+    ITokenService tokenService, 
+    IEmailService emailService,
+    IActivationService activationService) : IAuthService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly IMongoCollection<UserModel> _userCollection = mongoDbContext
@@ -28,7 +33,8 @@ public class AuthService(CurrentUserService currentUserService, IMongoDbContext 
         
         await InitialModelUpdate(userModel);
         //fluent validation yapılmalı
-        emailService.SendWelcomeEmail(userModel.Email,userModel.Username,cancellationToken);
+        var code = await activationService.GenerateActivationCode(userModel.Email, cancellationToken);
+        emailService.SendWelcomeEmail(userModel.Email, userModel.Username, code ,cancellationToken);
         
         return true;
     }
@@ -37,12 +43,19 @@ public class AuthService(CurrentUserService currentUserService, IMongoDbContext 
     {
         var deviceId = currentUserService.GetDeviceId();
         var user = await _userCollection
-            .Find(x => x.Email == email)
+            .Find(x => x.Email == email &&
+                       x.IsDeleted == false)
             .FirstOrDefaultAsync(cancellationToken);
         if (user is null)
         {
             Logger.Error($"[AuthService.Login] User {email} not found");
             throw new AppException("User not found", 404);
+        }
+
+        if (user.IsBanned == true)
+        {
+            Logger.Error($"[AuthService.Login] User {user.Id} is banned");
+            throw new AppException("User is banned", 401);
         }
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.HashedPassword))

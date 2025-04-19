@@ -9,7 +9,7 @@ using NLog;
 
 namespace Aniyuu.Services;
 
-public class EmailService(IActivationService activationService) : IEmailService
+public class EmailService() : IEmailService
 {
     private readonly string _smtpHost = AppSettingConfig.Configuration["MailSettings:Host"]!;
     private readonly int _smtpPort = Convert.ToInt32(AppSettingConfig.Configuration["MailSettings:Port"]!);
@@ -57,7 +57,7 @@ public class EmailService(IActivationService activationService) : IEmailService
         }
     }
 
-    public async Task SendWelcomeEmail(string email, string username, CancellationToken cancellationToken)
+    public async Task SendWelcomeEmail(string email, string username, int code, CancellationToken cancellationToken)
     {
         try
         {
@@ -69,7 +69,7 @@ public class EmailService(IActivationService activationService) : IEmailService
                 {
                     { "username", username },
                     { "email", email },
-                    { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
+                    { "code", Convert.ToString(code) }
                 });
         }
         catch (Exception e)
@@ -78,7 +78,7 @@ public class EmailService(IActivationService activationService) : IEmailService
         }
     }
 
-    public async Task ResendConfirmationEmail(string email, string username, CancellationToken cancellationToken)
+    public async Task ResendConfirmationEmail(string email, string username, int code, CancellationToken cancellationToken)
     {
         try
         {
@@ -90,7 +90,7 @@ public class EmailService(IActivationService activationService) : IEmailService
                 {
                     { "username", username },
                     { "email", email },
-                    { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
+                    { "code", Convert.ToString(code) }
                 });
         }
         catch (Exception e)

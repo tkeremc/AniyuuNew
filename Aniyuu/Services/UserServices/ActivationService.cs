@@ -59,11 +59,12 @@ public class ActivationService(IMongoDbContext mongoDbContext,
             Logger.Error($"[ActivationService.ResendActivationCode] Error updating code", e);
             throw new AppException("Error updating code", 500);
         }
-        emailService.ResendConfirmationEmail(email, user.Username, cancellationToken);
+        var code = await GenerateActivationCode(email, cancellationToken);
+        emailService.ResendConfirmationEmail(email, user.Username, code, cancellationToken);
         return true;
     }
 
-    public async Task<int?> GenerateActivationCode(string email, CancellationToken cancellationToken)
+    public async Task<int> GenerateActivationCode(string email, CancellationToken cancellationToken)
     {
         try
         {
@@ -80,7 +81,7 @@ public class ActivationService(IMongoDbContext mongoDbContext,
                 IsExpired = false
             };
             await _codeCollection.InsertOneAsync(code, cancellationToken);
-            return code.ActivationCode;
+            return Convert.ToInt32(code.ActivationCode);
         }
         catch (Exception e)
         {

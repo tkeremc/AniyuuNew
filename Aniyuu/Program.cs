@@ -16,7 +16,6 @@ app.Run();
 void ConfigureServices(WebApplicationBuilder builder)
 {
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -37,7 +36,10 @@ void ConfigureServices(WebApplicationBuilder builder)
 void ConfigureApp(WebApplication app)
 {
     app.UseSwagger(); 
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v2/swagger.json", "Aniyuu API V2");
+    });
     
     app.UseMiddleware<CountryRestrictionMiddleware>();
     app.UseMiddleware<TokenAuthenticationHandler>();
