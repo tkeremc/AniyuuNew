@@ -1,5 +1,6 @@
 ﻿using Aniyuu.Exceptions;
 using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Utils;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -8,7 +9,7 @@ using NLog;
 
 namespace Aniyuu.Services;
 
-public class EmailService : IEmailService
+public class EmailService(IActivationService activationService) : IEmailService
 {
     private readonly string _smtpHost = AppSettingConfig.Configuration["MailSettings:Host"]!;
     private readonly int _smtpPort = Convert.ToInt32(AppSettingConfig.Configuration["MailSettings:Port"]!);
@@ -66,7 +67,7 @@ public class EmailService : IEmailService
             {
                 { "username", username },
                 { "email", email },
-                { "code", "123123" }
+                { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
             });
     }
 
@@ -80,7 +81,7 @@ public class EmailService : IEmailService
             {
                 { "username", username },
                 { "email", email },
-                { "code", "123123" }
+                { "code", Convert.ToString(activationService.GenerateActivationCode(email, cancellationToken)) }
             });
     }
 

@@ -9,7 +9,7 @@ public class ActivationCodeModel :  BaseModel
     [BsonRepresentation(BsonType.ObjectId)]
     public string? Id { get; set; }
     
-    public string? ActivationCode { get; set; }
+    public int? ActivationCode { get; set; }
     public string? UserId { get; set; }
     public DateTime ExpireAt { get; set; }
     public DateTime UsedAt { get; set; }
