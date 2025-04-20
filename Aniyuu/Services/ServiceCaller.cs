@@ -1,7 +1,11 @@
 using System.Text;
 using Aniyuu.DbContext;
+using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.Services.UserServices;
 using Aniyuu.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -18,7 +22,12 @@ public sealed class ServiceCaller
 
     private static void ScopedServices(IServiceCollection services)
     {
-        
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IActivationService, ActivationService>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IEmailService, EmailService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
