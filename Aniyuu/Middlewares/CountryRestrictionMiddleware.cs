@@ -33,6 +33,13 @@ public class CountryRestrictionMiddleware(
             return;
         }
 
+        if (ip == "127.0.0.1")
+        {
+            logger.LogInformation("Local request, skipped.");
+            await next(context);
+            return;
+        }
+
         // Sadece IPv4 adreslerini kontrol et
         if (!IsValidIPv4(ip))
         {
