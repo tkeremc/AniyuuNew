@@ -91,7 +91,7 @@ public class TokenService(IMongoDbContext mongoDbContext,
         return refreshToken.RefreshToken;
     }
 
-    public async Task<TokensModel> RenewTokens(string userId, string refreshToken, string deviceId, CancellationToken cancellationToken)
+    public async Task<TokensModel> RenewTokens(string refreshToken, string deviceId, CancellationToken cancellationToken)
     {
         var filter = Builders<RefreshTokenModel>.Filter.And(
             Builders<RefreshTokenModel>.Filter.Eq(x => x.RefreshToken, refreshToken),
@@ -121,8 +121,8 @@ public class TokenService(IMongoDbContext mongoDbContext,
 
         var newTokens = new TokensModel
         {
-            RefreshToken = await GenerateRefreshToken(userId, deviceId, cancellationToken),
-            AccessToken = await GenerateAccessToken(userId, cancellationToken),
+            RefreshToken = await GenerateRefreshToken(activeRefreshToken.UserId, deviceId, cancellationToken),
+            AccessToken = await GenerateAccessToken(activeRefreshToken.UserId, cancellationToken),
         };
         return newTokens;
     }

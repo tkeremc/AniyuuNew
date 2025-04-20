@@ -37,9 +37,9 @@ public class ActivationService(IMongoDbContext mongoDbContext,
     public async Task<bool> ResendActivationCode(string email, CancellationToken cancellationToken)
     {
         var user = await _userCollection.Find(x => x.Email == email).FirstOrDefaultAsync(cancellationToken);
-        if (user == null)
+        if (user == null && user.IsActive == true)
         {
-            Logger.Error($"[ActivationService.ResendActivationCode] User with email {email} not found");
+            Logger.Error($"[ActivationService.ResendActivationCode] User with email {email} not found or already activated");
             throw new AppException("user is not found", 404);
         }
         var filter = Builders<ActivationCodeModel>.Filter.And(
