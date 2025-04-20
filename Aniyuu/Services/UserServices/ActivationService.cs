@@ -29,7 +29,8 @@ public class ActivationService(IMongoDbContext mongoDbContext,
         
         var filter = Builders<UserModel>.Filter.Eq(u => u.Id, codeModel.UserId);
         var update = Builders<UserModel>.Update.Set(u => u.IsActive, true);
-
+        var codeUpdate = Builders<ActivationCodeModel>.Update.Set(u => u.IsExpired, true);
+        await _codeCollection.UpdateOneAsync(u => u.ActivationCode == code, codeUpdate, cancellationToken: cancellationToken);
         var result = await _userCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
         return result.ModifiedCount > 0;
     }

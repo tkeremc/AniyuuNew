@@ -132,7 +132,8 @@ public class TokenService(IMongoDbContext mongoDbContext,
         var filter = Builders<RefreshTokenModel>.Filter.And(
             Builders<RefreshTokenModel>.Filter.Eq(x => x.UserId, userId),
             Builders<RefreshTokenModel>.Filter.Eq(x => x.DeviceId, deviceId),
-            Builders<RefreshTokenModel>.Filter.Eq(x => x.IsRevoked, false)
+            Builders<RefreshTokenModel>.Filter.Eq(x => x.IsRevoked, false),
+            Builders<RefreshTokenModel>.Filter.Eq(x => x.IsUsed, false)
         );
 
         var update = Builders<RefreshTokenModel>.Update

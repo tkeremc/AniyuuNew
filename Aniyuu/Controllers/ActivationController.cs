@@ -10,7 +10,6 @@ namespace Aniyuu.Controllers;
 [EnableCors("CorsApi")]
 public class ActivationController(IActivationService activationService) : ControllerBase
 {
-    [Authorize]
     [HttpPut("activate-user")]
     public async Task<ActionResult<bool>> ActivateUser(int code, CancellationToken cancellationToken)
     {
@@ -18,8 +17,7 @@ public class ActivationController(IActivationService activationService) : Contro
             .ActivateUser(code, cancellationToken);
         return result ? Ok(result) : BadRequest(result);
     }
-
-    [Authorize]
+    
     [HttpGet("resend-activation")]
     public async Task<ActionResult<bool>> ResendActivation(string email, CancellationToken cancellationToken)
     {

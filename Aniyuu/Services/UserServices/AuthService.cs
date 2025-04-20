@@ -33,6 +33,15 @@ public class AuthService(
         
         await InitialModelUpdate(userModel);
         //fluent validation yapılmalı
+        try
+        {
+            await _userCollection.InsertOneAsync(userModel, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[AuthService.Register] Error during registration: {e.Message}");
+            throw new AppException("Error during registration", 500);
+        }
         var code = await activationService.GenerateActivationCode(userModel.Email, cancellationToken);
         emailService.SendWelcomeEmail(userModel.Email, userModel.Username, code ,cancellationToken);
         
@@ -98,9 +107,7 @@ public class AuthService(
         userModel.UpdatedAt = DateTime.UtcNow;
         userModel.UpdatedBy = "system";
         userModel.ProfilePhoto = "0";
-        userModel.Roles ??= [];
         userModel.Devices ??= [];
-        userModel.Roles.Add("user");
         userModel.Devices.Add(currentUserService.GetDeviceId());
         userModel.WatchTime = 0;
         return Task.CompletedTask;

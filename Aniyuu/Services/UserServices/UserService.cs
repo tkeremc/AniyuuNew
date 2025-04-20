@@ -20,7 +20,7 @@ public class UserService(IMongoDbContext mongoDbContext,
     {
         var user = await _userCollection.Find(x => x.Id == currentUserService.GetUserId())
             .FirstOrDefaultAsync(cancellationToken);
-        if (user is null)
+        if (user is null || user.IsDeleted == true)
         {
             Logger.Error($"[UserService.Get] User not found. UserId: {currentUserService.GetUserId()}");
             throw new AppException("User not found",404);
@@ -69,7 +69,7 @@ public class UserService(IMongoDbContext mongoDbContext,
         var user = await Get(cancellationToken);
         user.IsDeleted = true;
         var deletedUser = await Update(user, cancellationToken);
-        if (user.IsDeleted == deletedUser.IsDeleted)
+        if (user.IsDeleted != deletedUser.IsDeleted)
         {
             Logger.Error($"[UserService.Delete] User ({user.Id}){user.Username} is not deleted");
             throw new AppException("User is not deleted", 500);

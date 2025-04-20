@@ -18,6 +18,7 @@ public class AuthController(IAuthService authService, IMapper mapper, ICurrentUs
         CancellationToken cancellationToken)
     {
         var userModel = mapper.Map<UserModel>(userCreateViewModel);
+        userModel.HashedPassword = userCreateViewModel.Password;
         var registerStatus = await authService.Register(userModel, cancellationToken);
         return Ok(registerStatus);
     }
