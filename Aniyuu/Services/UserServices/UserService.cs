@@ -41,6 +41,11 @@ public class UserService(IMongoDbContext mongoDbContext,
         return email;
     }
 
+    public async Task<bool> CheckUsername(string username, CancellationToken cancellationToken)
+    {
+        return await _userCollection.Find(x => x.Username == username).AnyAsync(cancellationToken);
+    }
+
     public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
         string updatedBy = "system")
     {

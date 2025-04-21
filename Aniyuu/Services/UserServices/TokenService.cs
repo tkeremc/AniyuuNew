@@ -84,7 +84,7 @@ public class TokenService(IMongoDbContext mongoDbContext,
         }
         catch (Exception e)
         {
-            Logger.Error("[Tokenservice.GenerateRefreshToken] Refresh Token insert failed");
+            Logger.Error($"[Tokenservice.GenerateRefreshToken] Refresh Token insert failed. RefreshToken:{refreshToken.RefreshToken}");
             throw new AppException("Refresh token insert failed");
         }
         
@@ -103,7 +103,7 @@ public class TokenService(IMongoDbContext mongoDbContext,
             .FirstOrDefaultAsync(cancellationToken);
         if (activeRefreshToken is null || activeRefreshToken.Expiration < DateTime.UtcNow)
         {
-            Logger.Error($"[TokenService.RenewTokens] RefreshToken is expired or not found");
+            Logger.Error($"[TokenService.RenewTokens] RefreshToken ({refreshToken}) is expired or not found");
             throw new AppException("RefreshToken is expired or not found", 404);
         }
 
