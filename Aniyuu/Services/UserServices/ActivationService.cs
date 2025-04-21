@@ -24,8 +24,22 @@ public class ActivationService(IMongoDbContext mongoDbContext,
         var codeModel = await _codeCollection
             .Find(x=>x.ActivationCode == code)
             .FirstOrDefaultAsync(cancellationToken);
-        if (codeModel == null || codeModel.ExpireAt < DateTime.UtcNow)
-            throw new AppException("code not found or expired", 404);
+        if (codeModel == null)
+        {
+            Logger.Error($"[ActivationService.ActivateUser] Code {code} not found");
+            throw new AppException("code not found", 404);
+        }
+            
+
+        if (codeModel.ExpireAt < DateTime.UtcNow)
+        {
+            var expireFilter = Builders<ActivationCodeModel>.Filter.Eq("ActivationCode", codeModel.ActivationCode);
+            var expireUpdate = Builders<ActivationCodeModel>.Update.Set(x  => x.UpdatedAt, DateTime.UtcNow)
+                .Set(x => x.IsExpired, true);
+            await _codeCollection.UpdateOneAsync(expireFilter, expireUpdate, cancellationToken: cancellationToken);
+            Logger.Info($"[ActivationService.ActivateUser] Code {codeModel.ActivationCode} is expired");
+            throw new AppException("code is expired", 400);
+        }
         
         var filter = Builders<UserModel>.Filter.Eq(u => u.Id, codeModel.UserId);
         var update = Builders<UserModel>.Update.Set(u => u.IsActive, true)

@@ -101,10 +101,19 @@ public class TokenService(IMongoDbContext mongoDbContext,
         );
         var activeRefreshToken = await _tokenCollection.Find(filter)
             .FirstOrDefaultAsync(cancellationToken);
-        if (activeRefreshToken is null || activeRefreshToken.Expiration < DateTime.UtcNow)
+        if (activeRefreshToken is null)
         {
-            Logger.Error($"[TokenService.RenewTokens] RefreshToken ({refreshToken}) is expired or not found");
+            Logger.Error($"[TokenService.RenewTokens] RefreshToken ({refreshToken}) is not found");
             throw new AppException("RefreshToken is expired or not found", 404);
+        }
+
+        if (activeRefreshToken.Expiration < DateTime.UtcNow)
+        {
+            var tokenFilter = Builders<RefreshTokenModel>.Filter.Eq(x => x.RefreshToken, refreshToken);
+            var tokenUpdate = Builders<RefreshTokenModel>.Update.Set(x => x.IsRevoked, true);
+            await _tokenCollection.UpdateOneAsync(tokenFilter, tokenUpdate, cancellationToken: cancellationToken);
+            Logger.Error($"[TokenService.RenewTokens] RefreshToken ({refreshToken}) is revoked");
+            throw new AppException("RefreshToken is revoked");
         }
 
         var update = Builders<RefreshTokenModel>.Update
