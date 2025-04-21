@@ -33,7 +33,7 @@ public class CountryRestrictionMiddleware(
             return;
         }
 
-        if (ip == "127.0.0.1")
+        if (ip is "127.0.0.1" or "::1")
         {
             logger.LogInformation("Local request, skipped.");
             await next(context);

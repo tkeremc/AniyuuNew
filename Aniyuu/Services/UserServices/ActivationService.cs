@@ -28,8 +28,11 @@ public class ActivationService(IMongoDbContext mongoDbContext,
             throw new AppException("code not found or expired", 404);
         
         var filter = Builders<UserModel>.Filter.Eq(u => u.Id, codeModel.UserId);
-        var update = Builders<UserModel>.Update.Set(u => u.IsActive, true);
-        var codeUpdate = Builders<ActivationCodeModel>.Update.Set(u => u.IsExpired, true);
+        var update = Builders<UserModel>.Update.Set(u => u.IsActive, true)
+            .Set(u => u.UpdatedBy, codeModel.UserId);
+        var codeUpdate = Builders<ActivationCodeModel>.Update.Set(u => u.IsExpired, true)
+            .Set(u => u.UsedAt, DateTime.UtcNow)
+            .Set(u => u.UpdatedBy, $"UserId: {codeModel.UserId}");
         await _codeCollection.UpdateOneAsync(u => u.ActivationCode == code, codeUpdate, cancellationToken: cancellationToken);
         var result = await _userCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
         return result.ModifiedCount > 0;

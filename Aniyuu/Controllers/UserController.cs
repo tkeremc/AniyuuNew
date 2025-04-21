@@ -35,7 +35,7 @@ public class UserController(IUserService userService, IMapper mapper) : Controll
         CancellationToken cancellationToken)
     {
         var userModel = mapper.Map<UserModel>(userUpdateViewModel);
-        var updatedUserModel = await userService.Update(userModel, cancellationToken);
+        var updatedUserModel = await userService.Update(userModel, cancellationToken, userModel.Id);
         var userViewModel = mapper.Map<UserViewModel>(updatedUserModel);
         return StatusCode(StatusCodes.Status200OK, userViewModel);
     }

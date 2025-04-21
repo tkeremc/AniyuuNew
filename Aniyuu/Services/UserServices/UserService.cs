@@ -41,10 +41,12 @@ public class UserService(IMongoDbContext mongoDbContext,
         return email;
     }
 
-    public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken)
+    public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
+        string updatedBy = "system")
     {
         var existedUserModel = await Get(cancellationToken);
         updatedUserModel.UpdatedAt = DateTime.UtcNow;
+        updatedUserModel.UpdatedBy = updatedBy;
         updatedUserModel =  UpdateCheckHelper.ReplaceNullToOldValues(existedUserModel,updatedUserModel);
         try
         {

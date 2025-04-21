@@ -6,7 +6,8 @@ public interface IUserService
 {
     Task<UserModel> Get(CancellationToken cancellationToken);
     Task<string> GetEmail(string username, CancellationToken cancellationToken);
-    Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken);
+    Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
+        string updatedBy = "system");
     Task<bool> Delete(CancellationToken cancellationToken);
     Task<bool> ChangePassword(string oldPassword, string newPassword, CancellationToken cancellationToken);
 }
