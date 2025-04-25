@@ -9,6 +9,7 @@ public interface IUserService
     Task<bool> CheckUsername(string username, CancellationToken cancellationToken);
     Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
         string updatedBy = "system");
+    Task<string> UpdateAvatar(IFormFile file, CancellationToken cancellationToken);
     Task<bool> Delete(CancellationToken cancellationToken);
     Task<bool> ChangePassword(string oldPassword, string newPassword, CancellationToken cancellationToken);
 }

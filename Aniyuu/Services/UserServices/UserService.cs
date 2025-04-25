@@ -4,13 +4,15 @@ using Aniyuu.Helpers;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models.UserModels;
 using Aniyuu.Utils;
+using Azure.Storage.Blobs;
 using MongoDB.Driver;
 using NLog;
 
 namespace Aniyuu.Services.UserServices;
 
 public class UserService(IMongoDbContext mongoDbContext,
-    ICurrentUserService currentUserService) : IUserService
+    ICurrentUserService currentUserService,
+    BlobServiceClient blobServiceClient) : IUserService
 {
     private readonly IMongoCollection<UserModel> _userCollection = mongoDbContext
         .GetCollection<UserModel>(AppSettingConfig.Configuration["MongoDBSettings:UserCollection"]!);
@@ -69,6 +71,46 @@ public class UserService(IMongoDbContext mongoDbContext,
             throw new AppException("Update failed", 500);
         }
         return updatedUserModel;
+    }
+
+    public async Task<string> UpdateAvatar(IFormFile file, CancellationToken cancellationToken)
+    {
+        
+        if (file == null || file.Length == 0)
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File is null or empty. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("Avatar file is empty");
+        }
+        
+        var currentUser = await Get(cancellationToken);
+        var allowedExtensions = new[] { ".jpg", ".png", ".jpeg" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var container = blobServiceClient.GetBlobContainerClient("profilephotos");
+        await container.CreateIfNotExistsAsync(Azure.Storage.Blobs.Models.PublicAccessType.Blob, cancellationToken: cancellationToken);
+        
+        if (extension == ".gif" && !currentUser.Roles!.Contains("Premium"))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] User is not premium user. gif pfp is forbidden. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("Gif pfp is forbidden");
+        }
+        
+        if (!allowedExtensions.Contains(extension))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File extension is invalid. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File extension is invalid");
+        }
+
+        foreach (var ext in allowedExtensions.Concat([".gif"]))
+            await container.GetBlobClient($"{currentUser.Id}{ext}").DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        
+        var newPfp = $"{currentUser.Id}{extension}";
+        var blobClient = container.GetBlobClient(newPfp);
+
+        await using var stream = file.OpenReadStream();
+        await blobClient.UploadAsync(stream, overwrite: true, cancellationToken: cancellationToken);
+
+        var photoUrl = blobClient.Uri.ToString();
+        return photoUrl;
     }
 
     public async Task<bool> Delete(CancellationToken cancellationToken)
