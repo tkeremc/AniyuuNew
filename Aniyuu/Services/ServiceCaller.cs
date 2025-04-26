@@ -4,6 +4,7 @@ using Aniyuu.Interfaces;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Services.UserServices;
 using Aniyuu.Utils;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +34,8 @@ public sealed class ServiceCaller
     private static void SingletonServices(IServiceCollection services)
     {
         services.AddSingleton<IMongoDbContext, MongoDbContext>();
+        services.AddSingleton(x =>
+            new BlobServiceClient(AppSettingConfig.Configuration["AzureBlob:ConnectionString"]));
     }
 
     private static void StartSettings(IServiceCollection services)

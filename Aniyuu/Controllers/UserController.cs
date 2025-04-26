@@ -41,6 +41,15 @@ public class UserController(IUserService userService, IMapper mapper) : Controll
     }
 
     [Authorize]
+    [HttpPut("profile-photo-update")]
+    public async Task<ActionResult<string>> UpdateProfilePhoto(IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        var newProfilePhoto = await userService.UpdateAvatar(file, cancellationToken);
+        return Ok(newProfilePhoto);
+    }
+
+    [Authorize]
     [HttpDelete("delete")]
     public async Task<ActionResult<bool>> Delete(CancellationToken cancellationToken)
     {

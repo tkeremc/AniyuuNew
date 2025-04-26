@@ -106,7 +106,7 @@ public class AuthService(
         userModel.CreatedAt = DateTime.UtcNow;
         userModel.UpdatedAt = DateTime.UtcNow;
         userModel.UpdatedBy = "system";
-        userModel.ProfilePhoto = "0";
+        userModel.ProfilePhoto = "not set";
         userModel.Devices ??= [];
         userModel.Devices.Add(currentUserService.GetDeviceId());
         userModel.WatchTime = 0;

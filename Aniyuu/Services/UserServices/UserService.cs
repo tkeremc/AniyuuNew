@@ -5,6 +5,7 @@ using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models.UserModels;
 using Aniyuu.Utils;
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using MongoDB.Driver;
 using NLog;
 
@@ -81,12 +82,23 @@ public class UserService(IMongoDbContext mongoDbContext,
             Logger.Error($"[UserService.UpdateAvatar] File is null or empty. UserId: {currentUserService.GetUserId()}");
             throw new AppException("Avatar file is empty");
         }
+
+        if (file.Length > 2 * 1024 * 1024 && file.Length < 5 * 1024)
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File cannot be larger than 2MB. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File cannot be larger than 2MB");
+        }
+
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File type not supported. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File type not supported");
+        }
         
         var currentUser = await Get(cancellationToken);
+        
         var allowedExtensions = new[] { ".jpg", ".png", ".jpeg" };
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var container = blobServiceClient.GetBlobContainerClient("profilephotos");
-        await container.CreateIfNotExistsAsync(Azure.Storage.Blobs.Models.PublicAccessType.Blob, cancellationToken: cancellationToken);
         
         if (extension == ".gif" && !currentUser.Roles!.Contains("Premium"))
         {
@@ -94,22 +106,44 @@ public class UserService(IMongoDbContext mongoDbContext,
             throw new AppException("Gif pfp is forbidden");
         }
         
-        if (!allowedExtensions.Contains(extension))
+        if (!allowedExtensions.Contains(extension) && extension != ".gif")
         {
             Logger.Error($"[UserService.UpdateAvatar] File extension is invalid. UserId: {currentUserService.GetUserId()}");
             throw new AppException("File extension is invalid");
         }
 
-        foreach (var ext in allowedExtensions.Concat([".gif"]))
-            await container.GetBlobClient($"{currentUser.Id}{ext}").DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        var container = blobServiceClient.GetBlobContainerClient(AppSettingConfig.Configuration["AzureBlob:ProfilePhotoContainer"]);
+        await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+
+        if (currentUser.ProfilePhoto != "not set")
+        {
+            var oldProfilePhoto = Path.GetFileName(new Uri(currentUser.ProfilePhoto).AbsolutePath);
+            await container.GetBlobClient(oldProfilePhoto).DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        }
         
-        var newPfp = $"{currentUser.Id}{extension}";
+        var usernameExtension = Guid.NewGuid().ToString("N")[..8]; //Guid.NewGuid().ToString("N").Substring(0,8);
+        
+        var newPfp = $"{currentUser.Id}{usernameExtension}{extension}";
         var blobClient = container.GetBlobClient(newPfp);
 
         await using var stream = file.OpenReadStream();
-        await blobClient.UploadAsync(stream, overwrite: true, cancellationToken: cancellationToken);
+        await blobClient.UploadAsync(stream,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = file.ContentType,
+                    ContentDisposition = "inline"
+                }
+            },
+            cancellationToken
+            );
 
         var photoUrl = blobClient.Uri.ToString();
+
+        currentUser.ProfilePhoto = photoUrl;
+        await Update(currentUser, cancellationToken, currentUserService.GetUserId());
+        
         return photoUrl;
     }
 

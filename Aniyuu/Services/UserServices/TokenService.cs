@@ -80,6 +80,7 @@ public class TokenService(IMongoDbContext mongoDbContext,
 
         try
         {
+            await RevokeAllTokens(userId, deviceId, cancellationToken);
             await _tokenCollection.InsertOneAsync(refreshToken, cancellationToken);
         }
         catch (Exception e)
