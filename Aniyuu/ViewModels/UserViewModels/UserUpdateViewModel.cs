@@ -6,4 +6,5 @@ public class UserUpdateViewModel
     public string? Username { get; set; }
     public string? ProfilePhoto { get; set; }
     public string? Gender { get; set; }
+    public string? UpdatedBy { get; set; }
 }

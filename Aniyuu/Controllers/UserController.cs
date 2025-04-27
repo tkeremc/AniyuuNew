@@ -11,9 +11,9 @@ namespace Aniyuu.Controllers;
 [ApiController]
 [Route("user")]
 [EnableCors("CorsApi")]
-[Authorize]
 public class UserController(IUserService userService, IMapper mapper) : ControllerBase
 {
+    [Authorize]
     [HttpGet("get")]
     public async Task<ActionResult<UserViewModel>> Get(CancellationToken cancellationToken)
     {
@@ -29,16 +29,27 @@ public class UserController(IUserService userService, IMapper mapper) : Controll
         return Ok(email);
     }
 
+    [Authorize]
     [HttpPut("update")]
     public async Task<ActionResult<UserViewModel>> Update(UserUpdateViewModel userUpdateViewModel,
         CancellationToken cancellationToken)
     {
         var userModel = mapper.Map<UserModel>(userUpdateViewModel);
-        var updatedUserModel = await userService.Update(userModel, cancellationToken);
+        var updatedUserModel = await userService.Update(userModel, cancellationToken, userModel.Id);
         var userViewModel = mapper.Map<UserViewModel>(updatedUserModel);
         return StatusCode(StatusCodes.Status200OK, userViewModel);
     }
 
+    [Authorize]
+    [HttpPut("profile-photo-update")]
+    public async Task<ActionResult<string>> UpdateProfilePhoto(IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        var newProfilePhoto = await userService.UpdateAvatar(file, cancellationToken);
+        return Ok(newProfilePhoto);
+    }
+
+    [Authorize]
     [HttpDelete("delete")]
     public async Task<ActionResult<bool>> Delete(CancellationToken cancellationToken)
     {
@@ -46,6 +57,7 @@ public class UserController(IUserService userService, IMapper mapper) : Controll
         return Ok(isUserDeleted);
     }
 
+    [Authorize]
     [HttpPut("change-password")]
     public async Task<ActionResult<bool>> ChangePassword(UserPasswordUpdateViewModel userPasswordUpdateViewModel,
         CancellationToken cancellationToken)

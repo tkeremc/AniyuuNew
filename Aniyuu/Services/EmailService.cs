@@ -52,7 +52,7 @@ public class EmailService() : IEmailService
         }
         catch (Exception e)
         {
-            Logger.Error("[EmailService.SendEmail] Error during sending email");
+            Logger.Error($"[EmailService.SendEmail] Error during sending email. Email:{to}");
             throw new AppException("Server error occurred on sending email", 500);
         }
     }
@@ -74,7 +74,7 @@ public class EmailService() : IEmailService
         }
         catch (Exception e)
         {
-            Logger.Error("[EmailService.SendWelcomeEmail] Error during sending email");
+            Logger.Error($"[EmailService.SendWelcomeEmail] Error during sending email. Email:{email}");
         }
     }
 
@@ -95,7 +95,7 @@ public class EmailService() : IEmailService
         }
         catch (Exception e)
         {
-            Logger.Error("[EmailService.ResendConfirmationEmail] Error during sending email");
+            Logger.Error($"[EmailService.ResendConfirmationEmail] Error during sending email. Email:{email}");
         }
     }
 
@@ -115,7 +115,7 @@ public class EmailService() : IEmailService
         }
         catch (Exception e)
         {
-            Logger.Error("[EmailService.PasswordResetEmail] Error during sending email");
+            Logger.Error($"[EmailService.PasswordResetEmail] Error during sending email. Email:{email}");
         }
     }
 }

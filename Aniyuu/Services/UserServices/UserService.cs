@@ -4,13 +4,16 @@ using Aniyuu.Helpers;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models.UserModels;
 using Aniyuu.Utils;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using MongoDB.Driver;
 using NLog;
 
 namespace Aniyuu.Services.UserServices;
 
 public class UserService(IMongoDbContext mongoDbContext,
-    ICurrentUserService currentUserService) : IUserService
+    ICurrentUserService currentUserService,
+    BlobServiceClient blobServiceClient) : IUserService
 {
     private readonly IMongoCollection<UserModel> _userCollection = mongoDbContext
         .GetCollection<UserModel>(AppSettingConfig.Configuration["MongoDBSettings:UserCollection"]!);
@@ -41,10 +44,17 @@ public class UserService(IMongoDbContext mongoDbContext,
         return email;
     }
 
-    public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken)
+    public async Task<bool> CheckUsername(string username, CancellationToken cancellationToken)
+    {
+        return await _userCollection.Find(x => x.Username == username).AnyAsync(cancellationToken);
+    }
+
+    public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
+        string updatedBy = "system")
     {
         var existedUserModel = await Get(cancellationToken);
         updatedUserModel.UpdatedAt = DateTime.UtcNow;
+        updatedUserModel.UpdatedBy = updatedBy;
         updatedUserModel =  UpdateCheckHelper.ReplaceNullToOldValues(existedUserModel,updatedUserModel);
         try
         {
@@ -62,6 +72,79 @@ public class UserService(IMongoDbContext mongoDbContext,
             throw new AppException("Update failed", 500);
         }
         return updatedUserModel;
+    }
+
+    public async Task<string> UpdateAvatar(IFormFile file, CancellationToken cancellationToken)
+    {
+        
+        if (file == null || file.Length == 0)
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File is null or empty. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("Avatar file is empty");
+        }
+
+        if (file.Length > 2 * 1024 * 1024 && file.Length < 5 * 1024)
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File cannot be larger than 2MB. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File cannot be larger than 2MB");
+        }
+
+        if (!file.ContentType.StartsWith("image/"))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File type not supported. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File type not supported");
+        }
+        
+        var currentUser = await Get(cancellationToken);
+        
+        var allowedExtensions = new[] { ".jpg", ".png", ".jpeg" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        
+        if (extension == ".gif" && !currentUser.Roles!.Contains("Premium"))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] User is not premium user. gif pfp is forbidden. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("Gif pfp is forbidden");
+        }
+        
+        if (!allowedExtensions.Contains(extension) && extension != ".gif")
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File extension is invalid. UserId: {currentUserService.GetUserId()}");
+            throw new AppException("File extension is invalid");
+        }
+
+        var container = blobServiceClient.GetBlobContainerClient(AppSettingConfig.Configuration["AzureBlob:ProfilePhotoContainer"]);
+        await container.CreateIfNotExistsAsync(PublicAccessType.Blob, cancellationToken: cancellationToken);
+
+        if (currentUser.ProfilePhoto != "not set")
+        {
+            var oldProfilePhoto = Path.GetFileName(new Uri(currentUser.ProfilePhoto).AbsolutePath);
+            await container.GetBlobClient(oldProfilePhoto).DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        }
+        
+        var usernameExtension = Guid.NewGuid().ToString("N")[..8]; //Guid.NewGuid().ToString("N").Substring(0,8);
+        
+        var newPfp = $"{currentUser.Id}{usernameExtension}{extension}";
+        var blobClient = container.GetBlobClient(newPfp);
+
+        await using var stream = file.OpenReadStream();
+        await blobClient.UploadAsync(stream,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = file.ContentType,
+                    ContentDisposition = "inline"
+                }
+            },
+            cancellationToken
+            );
+
+        var photoUrl = blobClient.Uri.ToString();
+
+        currentUser.ProfilePhoto = photoUrl;
+        await Update(currentUser, cancellationToken, currentUserService.GetUserId());
+        
+        return photoUrl;
     }
 
     public async Task<bool> Delete(CancellationToken cancellationToken)

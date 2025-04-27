@@ -24,7 +24,7 @@ public class AuthService(
     public async Task<bool> Register(UserModel userModel, CancellationToken cancellationToken)
     {
         if (await _userCollection
-                .Find(x => x.Email == userModel.Email)
+                .Find(x => x.Email == userModel.Email && x.IsDeleted == false)
                 .AnyAsync(cancellationToken))
         {
             Logger.Error($"[AuthService.Register] Email ({userModel.Email}) already registered");
@@ -69,7 +69,7 @@ public class AuthService(
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.HashedPassword))
         {
-            Logger.Error("[AuthService.Login] Invalid password");
+            Logger.Error($"[AuthService.Login] Invalid password. User:{user.Id}");
             throw new AppException("Password is incorrect");
         }
 
@@ -106,7 +106,7 @@ public class AuthService(
         userModel.CreatedAt = DateTime.UtcNow;
         userModel.UpdatedAt = DateTime.UtcNow;
         userModel.UpdatedBy = "system";
-        userModel.ProfilePhoto = "0";
+        userModel.ProfilePhoto = "not set";
         userModel.Devices ??= [];
         userModel.Devices.Add(currentUserService.GetDeviceId());
         userModel.WatchTime = 0;
