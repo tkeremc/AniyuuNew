@@ -24,11 +24,13 @@ jobs:
           SECRET_KEY=$(printf '%q' "${{ secrets.SECRET_KEY }}")
           MAIL_USER=$(printf '%q' "${{ secrets.MAIL_USER }}")
           MAIL_PASS=$(printf '%q' "${{ secrets.MAIL_PASS }}")
+          AZURE_BLOB=$(printf '%q' "${{ secrets.AZURE_BLOB}}")
 
           sed -i "s|Mongo_Placeholder|$CONNECTION_STRING|g" Aniyuu/appsettings.json
           sed -i "s|Secret_Placeholder|$SECRET_KEY|g" Aniyuu/appsettings.json
           sed -i "s|Mail_User_Placeholder|$MAIL_USER|g" Aniyuu/appsettings.json
           sed -i "s|Mail_Password_Placeholder|$MAIL_PASS|g" Aniyuu/appsettings.json
+          sed -i "s|Azure_Blob_Placeholder|$AZURE_BLOB|g" Aniyuu/appsettings.json
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
