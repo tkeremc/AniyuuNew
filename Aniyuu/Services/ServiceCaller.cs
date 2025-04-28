@@ -1,14 +1,16 @@
 using System.Text;
 using Aniyuu.DbContext;
 using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.MessageBrokerInterfaces;
 using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.Services.MessageBroker;
 using Aniyuu.Services.UserServices;
 using Aniyuu.Utils;
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using RabbitMQ.Client;
 
 namespace Aniyuu.Services;
 
@@ -29,11 +31,23 @@ public sealed class ServiceCaller
         services.AddScoped<IActivationService, ActivationService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IMessagePublisherService, MessagePublisherService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
     {
+        var factory = new ConnectionFactory
+        {
+            HostName = AppSettingConfig.Configuration["MessageBroker:ConnectionString"],
+            Port = Convert.ToInt32(AppSettingConfig.Configuration["MessageBroker:Port"]!),
+            UserName = AppSettingConfig.Configuration["MessageBroker:Username"],
+            Password = AppSettingConfig.Configuration["MessageBroker:Password"],
+            DispatchConsumersAsync = true
+        };
+        
+        
         services.AddSingleton<IMongoDbContext, MongoDbContext>();
+        services.AddSingleton(new MessageConnectionProvider(factory));
         services.AddSingleton(x =>
             new BlobServiceClient(AppSettingConfig.Configuration["AzureBlob:ConnectionString"]));
     }
