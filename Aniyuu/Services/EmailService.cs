@@ -99,18 +99,19 @@ public class EmailService() : IEmailService
         }
     }
 
-    public async Task PasswordResetEmail(string email, string username, CancellationToken cancellationToken)
+    public async Task PasswordResetEmail(string email, string username, string token, CancellationToken cancellationToken)
     {
         try
         {
             await SendEmail(
                 to: email,
                 subject: "Şifre değiştirme talebiniz",
-                templateName: "WelcomeEmail",
+                templateName: "PasswordResetEmail",
                 placeholders: new Dictionary<string, string>
                 {
                     { "username", username },
                     { "email", email },
+                    { "token", token }
                 });
         }
         catch (Exception e)
