@@ -1,5 +1,6 @@
 ﻿using Aniyuu.Interfaces.MessageBrokerInterfaces;
 using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.ViewModels;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,9 +26,29 @@ public class StatusController(IUserService userService,
     }
 
     [HttpGet("test-message")]
-    public async Task<ActionResult<string>> TestMessage(string message, string exchangeName, string queue, CancellationToken cancellationToken)
+    public async Task<ActionResult<string>> TestMessage(string message, string exchangeName, string routingKey, CancellationToken cancellationToken)
     {
-        messagePublisherService.PublishAsync(message, exchangeName,queue);
-        return Ok($"Test Message sent to {queue}. Message: {message}.");
+        messagePublisherService.PublishAsync(message, exchangeName,routingKey);
+        return Ok($"Test Message sent to {routingKey}. Message: {message}.");
+    }
+
+    [HttpGet("test-message-mailed")]
+    public async Task<IActionResult> TestMessageMailed(string to, string exchangeName, string routingKey,
+        CancellationToken cancellationToken)
+    {
+        var message = new EmailMessageViewModel()
+        {
+            To = to,
+            Subject = "Test",
+            TemplateName = "WelcomeEmail",
+            UsedPlaceholders = new Dictionary<string, string>()
+            {
+                { "username", "username" },
+                { "email", to },
+                { "code", "123456" }
+            }
+        };
+        messagePublisherService.PublishAsync(message, exchangeName, routingKey);
+        return Ok($"Test Message sent to {routingKey}. Message: {message}.");
     }
 }

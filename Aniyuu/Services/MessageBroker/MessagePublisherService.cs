@@ -11,6 +11,8 @@ public class MessagePublisherService(MessageConnectionProvider provider) : IMess
 
     public async Task PublishAsync<T>(T message, string exchangeName, string routingKey)
     {
+        var retryCount = routingKey == "notification" ? 5 : 1;
+        
         using var channel = provider.CreateChannel(); 
 
         var messageJson = JsonSerializer.Serialize(message);
@@ -27,6 +29,10 @@ public class MessagePublisherService(MessageConnectionProvider provider) : IMess
 
         var properties = channel.CreateBasicProperties();
         properties.Persistent = true;
+        properties.Headers = new Dictionary<string, object>
+        {
+            {"x-retry-count", retryCount}
+        };
 
         channel.BasicPublish(
             exchange: exchangeName,
