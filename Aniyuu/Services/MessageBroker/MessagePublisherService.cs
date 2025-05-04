@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
-using Aniyuu.Interfaces.MessageBrokerInterfaces;
+using Aniyuu.Interfaces;
 using Aniyuu.Utils;
 using RabbitMQ.Client;
 

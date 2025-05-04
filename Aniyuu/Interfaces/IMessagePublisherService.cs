@@ -1,4 +1,4 @@
-﻿namespace Aniyuu.Interfaces.MessageBrokerInterfaces;
+﻿namespace Aniyuu.Interfaces;
 
 public interface IMessagePublisherService
 {

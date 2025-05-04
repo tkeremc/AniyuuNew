@@ -1,5 +1,4 @@
-﻿using Aniyuu.Interfaces.MessageBrokerInterfaces;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 
 namespace Aniyuu.Services.MessageBroker;
 
