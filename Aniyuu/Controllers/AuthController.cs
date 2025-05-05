@@ -48,4 +48,22 @@ public class AuthController(IAuthService authService, IMapper mapper, ICurrentUs
         var tokensViewModel = mapper.Map<TokensViewModel>(newTokens);
         return Ok(tokensViewModel);
     }
+
+    [HttpGet("password-reset")]
+    public async Task<ActionResult<bool>> SendPassReset(string email, CancellationToken cancellationToken)
+    {
+        var response = await authService.SendPasswordRecovery(email, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("password-reset/confirm")]
+    public async Task<ActionResult<bool>> RecoverPassword([FromBody] PasswordRecoverViewModel passwordRecoverViewModel,
+        CancellationToken cancellationToken)
+    {
+        var response = await authService.RecoverPassword(passwordRecoverViewModel.PassToken,
+            passwordRecoverViewModel.NewPassword,
+            passwordRecoverViewModel.NewPasswordAgain,
+            cancellationToken);
+        return Ok(response);
+    }
 }

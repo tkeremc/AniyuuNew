@@ -49,6 +49,11 @@ public class UserService(IMongoDbContext mongoDbContext,
         return await _userCollection.Find(x => x.Username == username).AnyAsync(cancellationToken);
     }
 
+    public async Task<bool> CheckEmail(string email, CancellationToken cancellationToken)
+    {
+        return await _userCollection.Find(x => x.Email == email).AnyAsync(cancellationToken);
+    }
+
     public async Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
         string updatedBy = "system")
     {
@@ -83,7 +88,7 @@ public class UserService(IMongoDbContext mongoDbContext,
             throw new AppException("Avatar file is empty");
         }
 
-        if (file.Length > 2 * 1024 * 1024 && file.Length < 5 * 1024)
+        if (file.Length is > 2 * 1024 * 1024 or < 5 * 1024)
         {
             Logger.Error($"[UserService.UpdateAvatar] File cannot be larger than 2MB. UserId: {currentUserService.GetUserId()}");
             throw new AppException("File cannot be larger than 2MB");
@@ -93,6 +98,16 @@ public class UserService(IMongoDbContext mongoDbContext,
         {
             Logger.Error($"[UserService.UpdateAvatar] File type not supported. UserId: {currentUserService.GetUserId()}");
             throw new AppException("File type not supported");
+        }
+        
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms, cancellationToken);
+        var fileBytes =  ms.ToArray();
+
+        if (!IsValidImage(fileBytes))
+        {
+            Logger.Error($"[UserService.UpdateAvatar] File is invalid. DeviceId : {currentUserService.GetDeviceId()}");
+            throw new AppException("File is invalid",401);
         }
         
         var currentUser = await Get(cancellationToken);
@@ -174,5 +189,26 @@ public class UserService(IMongoDbContext mongoDbContext,
 
         await Update(user, cancellationToken);
         return true;
+    }
+    
+    
+    private static bool IsValidImage(byte[] fileBytes)
+    {
+        if (fileBytes.Length < 8) return false;
+
+        // PNG
+        if (fileBytes.Take(8).SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }))
+            return true;
+
+        // GIF87a or GIF89a
+        if (fileBytes.Take(6).SequenceEqual(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x37, 0x61 }) ||  // GIF87a
+            fileBytes.Take(6).SequenceEqual(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }))    // GIF89a
+            return true;
+
+        // JPEG/JPG
+        if (fileBytes.Length >= 3 && fileBytes[0] == 0xFF && fileBytes[1] == 0xD8 && fileBytes[2] == 0xFF)
+            return true;
+
+        return false;
     }
 }
