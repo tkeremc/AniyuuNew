@@ -49,14 +49,14 @@ public class AuthController(IAuthService authService, IMapper mapper, ICurrentUs
         return Ok(tokensViewModel);
     }
 
-    [HttpGet("send-pass-reset")]
+    [HttpGet("password-reset")]
     public async Task<ActionResult<bool>> SendPassReset(string email, CancellationToken cancellationToken)
     {
         var response = await authService.SendPasswordRecovery(email, cancellationToken);
         return Ok(response);
     }
 
-    [HttpPost("recover-password")]
+    [HttpPost("password-reset/confirm")]
     public async Task<ActionResult<bool>> RecoverPassword([FromBody] PasswordRecoverViewModel passwordRecoverViewModel,
         CancellationToken cancellationToken)
     {

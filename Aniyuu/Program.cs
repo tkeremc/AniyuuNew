@@ -27,6 +27,7 @@ void ConfigureServices(WebApplicationBuilder builder)
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
+        //eğer Credentials:include olarak bir istek gelirse backend e AllowAnyOrigin yüzünden patlar
     });
     
     
@@ -45,13 +46,13 @@ void ConfigureApp(WebApplication app)
     app.UseMiddleware<TokenAuthenticationHandler>();
     app.UseMiddleware<RequestLogMiddleware>();
     app.UseMiddleware<ExceptionMiddleware>();
-    
-    
+
+    app.UseRouting();
+    app.UseCors("CorsApi");
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();
     
-    app.UseCors("CorsApi");
 }

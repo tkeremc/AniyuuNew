@@ -1,10 +1,5 @@
-﻿using Aniyuu.Exceptions;
-using Aniyuu.Interfaces;
-using Aniyuu.Utils;
+﻿using Aniyuu.Interfaces;
 using Aniyuu.ViewModels;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
 using NLog;
 
 namespace Aniyuu.Services;

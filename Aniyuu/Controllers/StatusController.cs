@@ -18,20 +18,19 @@ public class StatusController(IUserService userService,
         return Ok("Service is alive!");
     }
 
-    [HttpGet("username-available")]
+    [HttpGet("is-username-available")]
     public async Task<IActionResult> UsernameAvailable(string username, CancellationToken cancellationToken)
     {
-        var result = await userService.CheckUsername(username, cancellationToken); //true un var kotu // false un yok iyi
+        var result = await userService.CheckUsername(username, cancellationToken); 
         return result ? StatusCode(StatusCodes.Status400BadRequest, "username is already registered.") : StatusCode(StatusCodes.Status200OK, "username is available.");
     }
-
-    [HttpGet("test-message")]
-    public async Task<ActionResult<string>> TestMessage(string message, string exchangeName, string routingKey, CancellationToken cancellationToken)
+    [HttpGet("is-email-available")]
+    public async Task<IActionResult> EmailAvailable(string email, CancellationToken cancellationToken)
     {
-        messagePublisherService.PublishAsync(message, exchangeName,routingKey);
-        return Ok($"Test Message sent to {routingKey}. Message: {message}.");
+        var result = await userService.CheckEmail(email, cancellationToken); 
+        return result ? StatusCode(StatusCodes.Status400BadRequest, "email is already registered.") : StatusCode(StatusCodes.Status200OK, "email is available.");
     }
-
+    
     [HttpGet("test-message-mailed")]
     public async Task<IActionResult> TestMessageMailed(string to, string exchangeName, string routingKey,
         CancellationToken cancellationToken)

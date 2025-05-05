@@ -7,6 +7,7 @@ public interface IUserService
     Task<UserModel> Get(CancellationToken cancellationToken);
     Task<string> GetEmail(string username, CancellationToken cancellationToken);
     Task<bool> CheckUsername(string username, CancellationToken cancellationToken);
+    Task<bool> CheckEmail(string email, CancellationToken cancellationToken);
     Task<UserModel> Update(UserModel updatedUserModel, CancellationToken cancellationToken,
         string updatedBy = "system");
     Task<string> UpdateAvatar(IFormFile file, CancellationToken cancellationToken);

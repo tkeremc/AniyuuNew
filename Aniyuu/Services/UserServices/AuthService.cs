@@ -207,7 +207,7 @@ public class AuthService(
         userModel.CreatedAt = DateTime.UtcNow;
         userModel.UpdatedAt = DateTime.UtcNow;
         userModel.UpdatedBy = "system";
-        userModel.ProfilePhoto = "not set";
+        userModel.ProfilePhoto = "https://aniyuupfp.blob.core.windows.net/profilephotos/default.jpg";
         userModel.Devices ??= [];
         userModel.Devices.Add(currentUserService.GetDeviceId());
         userModel.WatchTime = 0;
