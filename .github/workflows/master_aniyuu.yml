@@ -31,10 +31,10 @@ jobs:
           sed -i "s|Mongo_Placeholder|$CONNECTION_STRING|g" Aniyuu/appsettings.json
           sed -i "s|Secret_Placeholder|$SECRET_KEY|g" Aniyuu/appsettings.json
           sed -i "s|Azure_Blob_Placeholder|$AZURE_BLOB|g" Aniyuu/appsettings.json
-          sed -i "s|MB_Connection_Placeholder|$MB_CONNECTION_STRING|g" Aniyuu-EmailWorker/appsettings.json
-          sed -i "s|MB_SecretKey_Placeholder|$MB_SECRET_KEY|g" Aniyuu-EmailWorker/appsettings.json
-          sed -i "s|MB_Username_Placeholder|$MB_USERNAME|g" Aniyuu-EmailWorker/appsettings.json
-          sed -i "s|MB_Password_Placeholder|$MB_PASSWORD|g" Aniyuu-EmailWorker/appsettings.json
+          sed -i "s|MB_Connection_Placeholder|$MB_CONNECTION_STRING|g" Aniyuu/appsettings.json
+          sed -i "s|MB_SecretKey_Placeholder|$MB_SECRET_KEY|g" Aniyuu/appsettings.json
+          sed -i "s|MB_Username_Placeholder|$MB_USERNAME|g" Aniyuu/appsettings.json
+          sed -i "s|MB_Password_Placeholder|$MB_PASSWORD|g" Aniyuu/appsettings.json
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
