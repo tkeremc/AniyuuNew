@@ -18,19 +18,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: appsettings.json İçindeki Placeholder'ları GitHub Secrets ile Değiştir
+      - name: appsettings.json setup
         run: |
           CONNECTION_STRING=$(printf '%q' "${{ secrets.MONGO_DB }}")
           SECRET_KEY=$(printf '%q' "${{ secrets.SECRET_KEY }}")
-          MAIL_USER=$(printf '%q' "${{ secrets.MAIL_USER }}")
-          MAIL_PASS=$(printf '%q' "${{ secrets.MAIL_PASS }}")
           AZURE_BLOB=$(printf '%q' "${{ secrets.AZURE_BLOB}}")
+          MB_CONNECTION_STRING=$(printf '%q' "${{ secrets.MB_CONNECTION }}")
+          MB_SECRET_KEY=$(printf '%q' "${{ secrets.MB_SECRET }}")
+          MB_USERNAME=$(printf '%q' "${{ secrets.MB_USERNAME }}")
+          MB_PASSWORD=$(printf '%q' "${{ secrets.MB_PASSWORD }}")
 
           sed -i "s|Mongo_Placeholder|$CONNECTION_STRING|g" Aniyuu/appsettings.json
           sed -i "s|Secret_Placeholder|$SECRET_KEY|g" Aniyuu/appsettings.json
-          sed -i "s|Mail_User_Placeholder|$MAIL_USER|g" Aniyuu/appsettings.json
-          sed -i "s|Mail_Password_Placeholder|$MAIL_PASS|g" Aniyuu/appsettings.json
           sed -i "s|Azure_Blob_Placeholder|$AZURE_BLOB|g" Aniyuu/appsettings.json
+          sed -i "s|MB_Connection_Placeholder|$MB_CONNECTION_STRING|g" Aniyuu-EmailWorker/appsettings.json
+          sed -i "s|MB_SecretKey_Placeholder|$MB_SECRET_KEY|g" Aniyuu-EmailWorker/appsettings.json
+          sed -i "s|MB_Username_Placeholder|$MB_USERNAME|g" Aniyuu-EmailWorker/appsettings.json
+          sed -i "s|MB_Password_Placeholder|$MB_PASSWORD|g" Aniyuu-EmailWorker/appsettings.json
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
