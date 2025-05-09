@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using UAParser;
 
 namespace Aniyuu.Authentication;
 
@@ -12,6 +13,8 @@ public class TokenAuthenticationHandler(RequestDelegate next)
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() 
                         ?? context.Connection.RemoteIpAddress?.ToString();
         context.Request.Headers["X-IP-Address"] = ipAddress;
+
+        await GetClientInfo(context);
         
         var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
@@ -47,5 +50,16 @@ public class TokenAuthenticationHandler(RequestDelegate next)
             Console.WriteLine(e);
             throw;
         }
+    }
+
+    private Task GetClientInfo(HttpContext context)
+    {
+        var uaString = context.Request.Headers.UserAgent;
+        var uaParser = Parser.GetDefault();
+        var clientInfo = uaParser.Parse(uaString);
+        context.Request.Headers["X-Browser-Info"] =
+            $"{clientInfo.UA.Family} {clientInfo.UA.Major}.{clientInfo.UA.Minor}";
+        context.Request.Headers["X-Client-Info"] = $"{clientInfo.OS.Family} {clientInfo.OS.Major}";
+        return Task.CompletedTask;
     }
 }

@@ -1,10 +1,15 @@
 ﻿using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
+using Azure.Core;
+using MongoDB.Driver.Linq;
 using NLog;
+using UAParser;
 
 namespace Aniyuu.Services;
 
-public class EmailService(IMessagePublisherService messagePublisherService) : IEmailService
+public class EmailService(IMessagePublisherService messagePublisherService,
+    ICurrentUserService currentUserService) : IEmailService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
@@ -81,6 +86,37 @@ public class EmailService(IMessagePublisherService messagePublisherService) : IE
         catch (Exception e)
         {
             Logger.Error($"[EmailService.PasswordResetEmail] Error during sending email. Email:{email}");
+        }
+    }
+
+    public async Task NewDeviceLoginEmail(string email, string username,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var message = new EmailMessageViewModel()
+            {
+                To = email,
+                Subject = "Şifre değiştirme talebi",
+                TemplateName = "PasswordResetEmail",
+                UsedPlaceholders = new Dictionary<string, string>
+                {
+                    { "username", username },
+                    { "email", email },
+                    { "date", DateTime.UtcNow.ToString("dd/MM/yyyy") },
+                    { "hour", DateTime.UtcNow.ToString("hh:mm:ss t z") },
+                    { "ip_address", currentUserService.GetIpAddress() },
+                    { "location", currentUserService.GetUserAddress() },
+                    { "browser", currentUserService.GetBrowserData() },
+                    { "operating_system", currentUserService.GetOSData() }
+                }
+            };
+
+            await messagePublisherService.PublishAsync(message, "email-exchange", "notification");
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[EmailService.NewDeviceLogin] Error during sending email. Email:{email}");
         }
     }
 }
