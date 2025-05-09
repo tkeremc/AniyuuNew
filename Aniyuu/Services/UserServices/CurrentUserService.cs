@@ -39,4 +39,19 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
         var deviceId = httpContextAccessor.HttpContext?.Request.Headers["X-Device-Id"];
         return deviceId;
     }
+    public string GetBrowserData()
+    {
+        var browserInfo = httpContextAccessor.HttpContext?.Request.Headers["X-Browser-Info"];
+        return browserInfo;
+    }
+    public string GetOSData()
+    {
+        var clientInfo = httpContextAccessor.HttpContext?.Request.Headers["X-Client-Info"];
+        return clientInfo;
+    }
+    public string GetUserAddress()
+    {
+        var userAddress = httpContextAccessor.HttpContext?.Request.Headers["X-User-Address"];
+        return userAddress;
+    }
 }

@@ -1,9 +1,8 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Http;
+using Aniyuu.Exceptions;
+using Aniyuu.Models;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Aniyuu.Middlewares;
 
@@ -16,7 +15,7 @@ public class CountryRestrictionMiddleware(
 
     public async Task InvokeAsync(HttpContext context)
     {
-        string ip = GetClientIpAddress(context);
+        var ip = GetClientIpAddress(context);
 
         if (env.IsDevelopment())
         {
@@ -50,9 +49,9 @@ public class CountryRestrictionMiddleware(
         }
 
         // Eğer cache'de varsa, direkt sonucu döndür
-        if (_cache.TryGetValue(ip, out bool isTurkeyIp))
+        if (_cache.TryGetValue(ip, out IpCheckResult cachedResult))
         {
-            if (!isTurkeyIp)
+            if (!cachedResult.IsFromTR)
             {
                 logger.LogWarning($"Cached - Access denied for IP: {ip}.");
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -60,18 +59,15 @@ public class CountryRestrictionMiddleware(
                 return;
             }
 
+            context.Request.Headers["X-User-Address"] = cachedResult.Location ?? "Unknown";
             await next(context);
             return;
         }
 
-        // IP adresinin Türkiye olup olmadığını kontrol et
-        isTurkeyIp = await IsIpFromTurkey(ip);
+        var result = await IsIpFromTurkey(ip, context);
+        _cache.Set(ip, result, result.IsFromTR ? TimeSpan.FromHours(6) : TimeSpan.FromHours(1));
 
-        // Eğer API başarısız olursa varsayılan olarak erişimi reddet
-        var cacheTime = isTurkeyIp ? TimeSpan.FromHours(6) : TimeSpan.FromHours(1);
-        _cache.Set(ip, isTurkeyIp, cacheTime);
-
-        if (!isTurkeyIp)
+        if (!result.IsFromTR)
         {
             logger.LogWarning($"Checked - Access denied for IP: {ip}.");
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -79,7 +75,9 @@ public class CountryRestrictionMiddleware(
             return;
         }
 
+        context.Request.Headers["X-User-Address"] = result.Location ?? "Unknown";
         await next(context);
+
     }
 
     private string GetClientIpAddress(HttpContext context)
@@ -101,27 +99,36 @@ public class CountryRestrictionMiddleware(
         return IPAddress.TryParse(ip, out var parsedIp) && parsedIp.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork;
     }
 
-    private async Task<bool> IsIpFromTurkey(string ip)
+    private async Task<IpCheckResult> IsIpFromTurkey(string ip, HttpContext context)
     {
         try
         {
             var isTurkeyIp = await CheckIpWithPrimaryApi(ip);
-            if (isTurkeyIp.HasValue)
-                return isTurkeyIp.Value;
+            if (isTurkeyIp == null)
+            {
+                logger.LogWarning($"Primary API failed, trying backup API for IP: {ip}");
+                isTurkeyIp = await CheckIpWithBackupApi(ip);
+            }
 
-            logger.LogWarning($"Primary API failed, trying backup API for IP: {ip}");
-            isTurkeyIp = await CheckIpWithBackupApi(ip);
-
-            return isTurkeyIp ?? false;
+            if (isTurkeyIp.CountryCode?.ToUpper() != "TR")
+            {
+                throw new AppException("Invalid country code.");
+            }
+            context.Request.Headers["X-User-Address"] = $"{isTurkeyIp.Country}, {isTurkeyIp.City}";
+            return new IpCheckResult
+            {
+                IsFromTR = true,
+                Location = $"{isTurkeyIp.Country}, {isTurkeyIp.City}"
+            };
         }
         catch (Exception ex)
         {
             logger.LogError($"IP check failed: {ex.Message}");
-            return false;
+            throw new AppException("Ip check failed",500);
         }
     }
 
-    private async Task<bool?> CheckIpWithPrimaryApi(string ip)
+    private async Task<IpApiResponse?> CheckIpWithPrimaryApi(string ip)
     {
         try
         {
@@ -142,7 +149,7 @@ public class CountryRestrictionMiddleware(
                     return null;
                 }
 
-                return ipInfo.CountryCode?.ToUpper() == "TR";
+                return ipInfo;
             }
         }
         catch (Exception ex)
@@ -153,7 +160,7 @@ public class CountryRestrictionMiddleware(
         return null;
     }
 
-    private async Task<bool?> CheckIpWithBackupApi(string ip)
+    private async Task<IpApiResponse?> CheckIpWithBackupApi(string ip)
     {
         try
         {
@@ -167,14 +174,14 @@ public class CountryRestrictionMiddleware(
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
                 var ipInfo = JsonSerializer.Deserialize<IpApiResponse>(json, options);
-
+                
                 if (ipInfo == null)
                 {
                     logger.LogWarning($"Backup API returned failure for IP: {ip}. Response: {json}");
                     return null;
                 }
 
-                return ipInfo.CountryCode?.ToUpper() == "TR";
+                return ipInfo;
             }
         }
         catch (Exception ex)
@@ -184,22 +191,9 @@ public class CountryRestrictionMiddleware(
 
         return null;
     }
-
-    private class IpApiResponse
+    private class IpCheckResult
     {
-        public string? Status { get; set; }
-        public string? Country { get; set; }
-        public string? CountryCode { get; set; }
-        public string? Region { get; set; }
-        public string? RegionName { get; set; }
-        public string? City { get; set; }
-        public string? Zip { get; set; }
-        public double? Lat { get; set; }
-        public double? Lon { get; set; }
-        public string? Timezone { get; set; }
-        public string? Isp { get; set; }
-        public string? Org { get; set; }
-        public string? As { get; set; }
-        public string? Query { get; set; }
+        public bool IsFromTR { get; set; }
+        public string? Location { get; set; }
     }
 }

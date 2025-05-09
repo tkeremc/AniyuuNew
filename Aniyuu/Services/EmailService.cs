@@ -1,10 +1,12 @@
 ﻿using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
 using NLog;
 
 namespace Aniyuu.Services;
 
-public class EmailService(IMessagePublisherService messagePublisherService) : IEmailService
+public class EmailService(IMessagePublisherService messagePublisherService,
+    ICurrentUserService currentUserService) : IEmailService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
@@ -15,7 +17,7 @@ public class EmailService(IMessagePublisherService messagePublisherService) : IE
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Aniyuu'ya Hoş Geldin!",
+                Subject = "Aniyuu.com | Aniyuu'ya Hoş Geldin!",
                 TemplateName = "WelcomeEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -40,7 +42,7 @@ public class EmailService(IMessagePublisherService messagePublisherService) : IE
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Aniyuu Hesabınızı doğrulayın!",
+                Subject = "Aniyuu.com | Aniyuu Hesabınızı doğrulayın!",
                 TemplateName = "ActivationCodeEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -66,7 +68,7 @@ public class EmailService(IMessagePublisherService messagePublisherService) : IE
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Şifre değiştirme talebi",
+                Subject = "Aniyuu.com | Şifre değiştirme talebi",
                 TemplateName = "PasswordResetEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -81,6 +83,37 @@ public class EmailService(IMessagePublisherService messagePublisherService) : IE
         catch (Exception e)
         {
             Logger.Error($"[EmailService.PasswordResetEmail] Error during sending email. Email:{email}");
+        }
+    }
+
+    public async Task NewDeviceLoginEmail(string email, string username,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var message = new EmailMessageViewModel()
+            {
+                To = email,
+                Subject = "Aniyuu.com | Yeni cihaz girişi yapıldı!",
+                TemplateName = "NewLoginEmail",
+                UsedPlaceholders = new Dictionary<string, string>
+                {
+                    { "username", username },
+                    { "email", email },
+                    { "date", DateTime.UtcNow.ToString("dd/MM/yyyy") },
+                    { "time", DateTime.UtcNow.ToString("hh:mm:ss t z") },
+                    { "ip_address", currentUserService.GetIpAddress() }, //sus, maybe im gonna delete this part
+                    { "location", currentUserService.GetUserAddress() },
+                    { "browser", currentUserService.GetBrowserData() },
+                    { "operating_system", currentUserService.GetOSData() }
+                }
+            };
+
+            await messagePublisherService.PublishAsync(message, "email-exchange", "notification");
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[EmailService.NewDeviceLogin] Error during sending email. Email:{email}");
         }
     }
 }

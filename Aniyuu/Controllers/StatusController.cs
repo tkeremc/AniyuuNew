@@ -3,6 +3,7 @@ using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using UAParser;
 
 namespace Aniyuu.Controllers;
 
@@ -10,7 +11,8 @@ namespace Aniyuu.Controllers;
 [Route("status")]
 [EnableCors("CorsApi")]
 public class StatusController(IUserService userService,
-    IMessagePublisherService messagePublisherService) : ControllerBase
+    IMessagePublisherService messagePublisherService,
+    ICurrentUserService currentUserService) : ControllerBase
 {
     [HttpGet("alive")]
     public async Task<IActionResult> Alive(CancellationToken cancellationToken)
@@ -49,5 +51,23 @@ public class StatusController(IUserService userService,
         };
         messagePublisherService.PublishAsync(message, exchangeName, routingKey);
         return Ok($"Test Message sent to {routingKey}. Message: {message}.");
+    }
+    [HttpGet("get-client-details")]
+    public IActionResult GetBrowserDetails()
+    {
+        var result = new
+        {
+            Browser = new
+            {
+                Name = currentUserService.GetBrowserData(),
+                Location = currentUserService.GetUserAddress()
+            },
+            OS = new
+            {
+                Name = currentUserService.GetOSData()
+            }
+        };
+
+        return Ok(result);
     }
 }
