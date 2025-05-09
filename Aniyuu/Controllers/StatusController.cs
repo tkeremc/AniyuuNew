@@ -52,7 +52,7 @@ public class StatusController(IUserService userService,
         messagePublisherService.PublishAsync(message, exchangeName, routingKey);
         return Ok($"Test Message sent to {routingKey}. Message: {message}.");
     }
-    [HttpGet]
+    [HttpGet("get-client-details")]
     public IActionResult GetBrowserDetails()
     {
         var result = new

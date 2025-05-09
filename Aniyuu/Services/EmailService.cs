@@ -1,10 +1,7 @@
 ﻿using Aniyuu.Interfaces;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
-using Azure.Core;
-using MongoDB.Driver.Linq;
 using NLog;
-using UAParser;
 
 namespace Aniyuu.Services;
 
@@ -20,7 +17,7 @@ public class EmailService(IMessagePublisherService messagePublisherService,
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Aniyuu'ya Hoş Geldin!",
+                Subject = "Aniyuu.com | Aniyuu'ya Hoş Geldin!",
                 TemplateName = "WelcomeEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -45,7 +42,7 @@ public class EmailService(IMessagePublisherService messagePublisherService,
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Aniyuu Hesabınızı doğrulayın!",
+                Subject = "Aniyuu.com | Aniyuu Hesabınızı doğrulayın!",
                 TemplateName = "ActivationCodeEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -71,7 +68,7 @@ public class EmailService(IMessagePublisherService messagePublisherService,
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Şifre değiştirme talebi",
+                Subject = "Aniyuu.com | Şifre değiştirme talebi",
                 TemplateName = "PasswordResetEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
@@ -97,15 +94,15 @@ public class EmailService(IMessagePublisherService messagePublisherService,
             var message = new EmailMessageViewModel()
             {
                 To = email,
-                Subject = "Şifre değiştirme talebi",
-                TemplateName = "PasswordResetEmail",
+                Subject = "Aniyuu.com | Yeni cihaz girişi yapıldı!",
+                TemplateName = "NewLoginEmail",
                 UsedPlaceholders = new Dictionary<string, string>
                 {
                     { "username", username },
                     { "email", email },
                     { "date", DateTime.UtcNow.ToString("dd/MM/yyyy") },
-                    { "hour", DateTime.UtcNow.ToString("hh:mm:ss t z") },
-                    { "ip_address", currentUserService.GetIpAddress() },
+                    { "time", DateTime.UtcNow.ToString("hh:mm:ss t z") },
+                    { "ip_address", currentUserService.GetIpAddress() }, //sus, maybe im gonna delete this part
                     { "location", currentUserService.GetUserAddress() },
                     { "browser", currentUserService.GetBrowserData() },
                     { "operating_system", currentUserService.GetOSData() }
