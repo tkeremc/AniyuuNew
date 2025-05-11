@@ -17,6 +17,7 @@ public class AnimeModel : BaseModel
     public string? BackdropLink { get; set; }
     
     public int? EpisodeCount { get; set; }
+    public int? SeasonCount { get; set; }
     
     public List<string>? GenreIds { get; set; }
     public List<string>? Tags { get; set; }
@@ -24,7 +25,7 @@ public class AnimeModel : BaseModel
     public DateTime? ReleaseDate { get; set; }
     public string? Status { get; set; }
     
-    public List<string>? Studios { get; set; }
+    // public List<string>? Studios { get; set; }
     
     public int? MALId{ get; set; }
     public double? MALScore { get; set; }
@@ -35,4 +36,6 @@ public class AnimeModel : BaseModel
     public int? FavoriteCount { get; set; }
     
     public string? Slug { get; set; }
+
+    public string? BunnyLibraryId { get; set; }
 }
