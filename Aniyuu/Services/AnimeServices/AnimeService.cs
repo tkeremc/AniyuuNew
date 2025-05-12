@@ -54,7 +54,7 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         }
     }
 
-    public async Task<bool> Create(int malAnimeId, CancellationToken cancellationToken)
+    public async Task<bool> Create(int malAnimeId, string backdropLink, List<string> tags, List<string> trailers,CancellationToken cancellationToken)
     {
         if (await IsAnimeExist(malAnimeId, cancellationToken)!)
         {
@@ -64,7 +64,7 @@ public class AnimeService(IMongoDbContext mongoDbContext,
 
         var malData = await GetMalData(malAnimeId, cancellationToken);
         var newAnime = new AnimeModel();
-        await InitialModelUpdate(newAnime, malData);
+        await InitialModelUpdate(newAnime, malData, backdropLink, tags, trailers);
 
         try
         {
@@ -130,20 +130,25 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         }
         return true;
     }
+    
+    public async Task<bool>? IsAnimeExist(int malId, CancellationToken cancellationToken)
+    {
+        var result = await _animeCollection.Find(x => x.MALId == malId && x.IsActive == true).AnyAsync(cancellationToken);
+        return result;
+    }
 
 
-    private async Task InitialModelUpdate(AnimeModel animeModel, MALResponseModel malModel)
+    private async Task InitialModelUpdate(AnimeModel animeModel, MALResponseModel malModel, string backdropLink, List<string> tags, List<string> trailers)
     {
         animeModel.Title = malModel.Title;
         animeModel.AlternativeTitles = malModel.AlternativeTitles;
         animeModel.Description = await TranslateHelper.Translate(malModel.Synopsis);
         animeModel.BannerLink = malModel.Pictures![0].Large;
-        animeModel.BackdropLink = "";
+        animeModel.BackdropLink = backdropLink;
         animeModel.EpisodeCount = malModel.NumEpisodes;
         animeModel.SeasonCount = 0;
         animeModel.Genre = malModel.Genres;
-        animeModel.Tags ??= [];
-        animeModel.Tags.Add("not set");
+        animeModel.Tags ??= tags;
         animeModel.ReleaseDate = Convert.ToDateTime(malModel.StartDate);
         animeModel.Status = malModel.Status;
         animeModel.MALId = malModel.Id;
@@ -157,7 +162,7 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         animeModel.Slug = SlugHelper.FormatString(animeModel.Title);
         animeModel.BunnyLibraryId = "423517";
         animeModel.IsActive = true;
-        animeModel.TrailerLinks ??= [];
+        animeModel.TrailerLinks ??= trailers;
     }
 
     private async Task<MALResponseModel?> GetMalData(int malId, CancellationToken cancellationToken)
@@ -190,11 +195,5 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             Logger.Error($"[AnimeService.GetMalData] Api response exception: {e.Message}");
             throw new AppException("Api response exception occurred.", 404);
         }
-    }
-
-    private async Task<bool>? IsAnimeExist(int malId, CancellationToken cancellationToken)
-    {
-        var result = await _animeCollection.Find(x => x.MALId == malId && x.IsActive == true).AnyAsync(cancellationToken);
-        return result;
     }
 }
