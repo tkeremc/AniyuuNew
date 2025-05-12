@@ -18,6 +18,7 @@ void ConfigureServices(WebApplicationBuilder builder)
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddHttpClient();
     builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
     builder.Services.AddCors(options =>

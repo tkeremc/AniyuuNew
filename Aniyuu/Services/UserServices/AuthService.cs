@@ -86,7 +86,7 @@ public class AuthService(
             await _userCollection.UpdateOneAsync(filter, update, null, cancellationToken);
         }
         
-        await emailService.NewDeviceLoginEmail(user.Email, user.Username, cancellationToken);
+        emailService.NewDeviceLoginEmail(user.Email, user.Username, cancellationToken);
         
         return new TokensModel
         {

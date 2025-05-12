@@ -1,9 +1,9 @@
-﻿using Aniyuu.Interfaces;
+﻿using Aniyuu.Helpers;
+using Aniyuu.Interfaces;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using UAParser;
 
 namespace Aniyuu.Controllers;
 
@@ -69,5 +69,11 @@ public class StatusController(IUserService userService,
         };
 
         return Ok(result);
+    }
+
+    [HttpGet("test-translate")]
+    public async Task<ActionResult<string>> Translate(string text)
+    {
+        return await TranslateHelper.Translate(text);
     }
 }

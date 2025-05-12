@@ -27,6 +27,8 @@ jobs:
           MB_SECRET_KEY=$(printf '%q' "${{ secrets.MB_SECRET }}")
           MB_USERNAME=$(printf '%q' "${{ secrets.MB_USERNAME }}")
           MB_PASSWORD=$(printf '%q' "${{ secrets.MB_PASSWORD }}")
+          DEEPL_AUTH_KEY=$(printf '%q' "${{ secrets.DEEPL_AUTH }}")
+          MAL_CLIENT_ID=$(printf '%q' "${{ secrets.MAL_CLIENT }}")
 
           sed -i "s|Mongo_Placeholder|$CONNECTION_STRING|g" Aniyuu/appsettings.json
           sed -i "s|Secret_Placeholder|$SECRET_KEY|g" Aniyuu/appsettings.json
@@ -35,6 +37,8 @@ jobs:
           sed -i "s|MB_SecretKey_Placeholder|$MB_SECRET_KEY|g" Aniyuu/appsettings.json
           sed -i "s|MB_Username_Placeholder|$MB_USERNAME|g" Aniyuu/appsettings.json
           sed -i "s|MB_Password_Placeholder|$MB_PASSWORD|g" Aniyuu/appsettings.json
+          sed -i "s|DeepL_AuthKey_Placeholder|$DEEPL_AUTH_KEY|g" Aniyuu/appsettings.json
+          sed -i "s|ClientId_Placeholder|$MAL_CLIENT_ID|g" Aniyuu/appsettings.json
 
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v4

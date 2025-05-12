@@ -101,7 +101,7 @@ public class EmailService(IMessagePublisherService messagePublisherService,
                     { "username", username },
                     { "email", email },
                     { "date", DateTime.UtcNow.ToString("dd/MM/yyyy") },
-                    { "time", DateTime.UtcNow.ToString("hh:mm:ss t z") },
+                    { "time", DateTime.UtcNow.ToString("hh:mm:ss") },
                     { "ip_address", currentUserService.GetIpAddress() }, //sus, maybe im gonna delete this part
                     { "location", currentUserService.GetUserAddress() },
                     { "browser", currentUserService.GetBrowserData() },
