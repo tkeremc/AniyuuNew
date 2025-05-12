@@ -21,11 +21,12 @@ public class AnimeModel : BaseModel
     
     public List<MalGenre>? Genre { get; set; }
     public List<string>? Tags { get; set; }
+    public string? Source { get; set; }
     
     public DateTime? ReleaseDate { get; set; }
     public string? Status { get; set; }
     
-    // public List<string>? Studios { get; set; }
+    public List<MalStudio>? Studios { get; set; }
     
     public int? MALId{ get; set; }
     public double? MALScore { get; set; }

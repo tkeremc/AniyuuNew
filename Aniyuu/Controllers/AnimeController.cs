@@ -12,7 +12,7 @@ namespace Aniyuu.Controllers;
 public class AnimeController(IAnimeService animeService) : ControllerBase
 {
     [HttpPost("create-anime")]
-    public async Task<ActionResult<AnimeModel>> Create(int malAnimeId, CancellationToken cancellationToken)
+    public async Task<ActionResult<bool>> Create(int malAnimeId, CancellationToken cancellationToken)
     {
         return await animeService.Create(malAnimeId, cancellationToken);
     }

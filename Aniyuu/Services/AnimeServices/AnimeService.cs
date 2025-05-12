@@ -35,11 +35,11 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         }
     }
 
-    public async Task<AnimeModel> Get(string id, CancellationToken cancellationToken)
+    public async Task<AnimeModel> Get(int malId, CancellationToken cancellationToken)
     {
         try
         {
-            var anime = await _animeCollection.Find(x => x.Id == id && x.IsActive == true).FirstOrDefaultAsync(cancellationToken);
+            var anime = await _animeCollection.Find(x => x.MALId == malId && x.IsActive == true).FirstOrDefaultAsync(cancellationToken);
             if (anime == null)
             {
                 Logger.Error("[AnimeService.Get] Anime not found.");
@@ -54,11 +54,9 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         }
     }
 
-    public async Task<AnimeModel> Create(int malAnimeId, CancellationToken cancellationToken)
+    public async Task<bool> Create(int malAnimeId, CancellationToken cancellationToken)
     {
-        if (await _animeCollection
-                .Find(x => x.MALId == malAnimeId && x.IsActive == true)
-                .AnyAsync(cancellationToken))
+        if (await IsAnimeExist(malAnimeId, cancellationToken)!)
         {
             Logger.Error("[AnimeService.Create] Anime already exist.");
             throw new AppException("Anime already exist.", 409);
@@ -78,17 +76,59 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             throw new AppException("Mongo insert failed.", 500);
         }
         
-        return newAnime;
+        return true;
     }
 
-    public Task<AnimeModel> Update(AnimeModel animeModel, CancellationToken cancellationToken)
+    public async Task<AnimeModel> Update(int malId, AnimeModel animeModel, CancellationToken cancellationToken, string updatedBy = "system")
     {
-        throw new NotImplementedException();
+        if (!await IsAnimeExist(malId, cancellationToken)!)
+        {
+            Logger.Error("[AnimeService.Update] Anime not found.");
+            throw new AppException("Anime not found.", 409);
+        }
+        
+        var existedAnimeModel = await Get(malId, cancellationToken);
+        existedAnimeModel.UpdatedAt = DateTime.UtcNow;
+        existedAnimeModel.UpdatedBy = updatedBy;
+        animeModel = UpdateCheckHelper.ReplaceNullToOldValues(existedAnimeModel, animeModel);
+        try
+        {
+            var result = await _animeCollection
+                .ReplaceOneAsync(x => x.MALId == malId, animeModel, cancellationToken: cancellationToken);
+            if (result.ModifiedCount == 0)
+            {
+                Logger.Error("[AnimeService.Update] Anime not updated.");
+                throw new AppException("Anime not updated.", 500);
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[AnimeService.Update] Message: {e}.");
+            throw new AppException("Anime update server problem.", 500);
+        }
+        return animeModel;
     }
 
-    public Task<AnimeModel> Delete(string id, CancellationToken cancellationToken)
+    public async Task<bool> Delete(int malId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        if (!await IsAnimeExist(malId,cancellationToken)!)
+        {
+            Logger.Error("[AnimeService.Delete] Anime not found.");
+            throw new AppException("Anime not found.", 409);
+        }
+        var filter = Builders<AnimeModel>.Filter.Eq("MALId", malId);
+        var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false);
+        
+        try
+        {
+            await _animeCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[AnimeService.Delete] Update failed: {e}.");
+            throw new AppException("Anime update failed.", 500);
+        }
+        return true;
     }
 
 
@@ -110,6 +150,8 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         animeModel.MALScore = malModel.Mean;
         animeModel.MALRank = malModel.Rank;
         animeModel.MALRating = malModel.Rating;
+        animeModel.Studios = malModel.Studios;
+        animeModel.Source = malModel.Source;
         animeModel.ViewCount = 0;
         animeModel.FavoriteCount = 0;
         animeModel.Slug = SlugHelper.FormatString(animeModel.Title);
@@ -148,5 +190,11 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             Logger.Error($"[AnimeService.GetMalData] Api response exception: {e.Message}");
             throw new AppException("Api response exception occurred.", 404);
         }
+    }
+
+    private async Task<bool>? IsAnimeExist(int malId, CancellationToken cancellationToken)
+    {
+        var result = await _animeCollection.Find(x => x.MALId == malId && x.IsActive == true).AnyAsync(cancellationToken);
+        return result;
     }
 }
