@@ -10,7 +10,7 @@ public class AnimeModel : BaseModel
     public string? Id { get; set; }
     
     public string? Title { get; set; }
-    public Dictionary<string, string>? AlternativeTitles { get; set; }
+    public MalAlternativeTitles? AlternativeTitles { get; set; }
     public string? Description { get; set; }
     
     public string? BannerLink { get; set; }
@@ -19,7 +19,7 @@ public class AnimeModel : BaseModel
     public int? EpisodeCount { get; set; }
     public int? SeasonCount { get; set; }
     
-    public List<string>? GenreIds { get; set; }
+    public List<MalGenre>? Genre { get; set; }
     public List<string>? Tags { get; set; }
     
     public DateTime? ReleaseDate { get; set; }
@@ -38,4 +38,6 @@ public class AnimeModel : BaseModel
     public string? Slug { get; set; }
 
     public string? BunnyLibraryId { get; set; }
+    public List<string>? TrailerLinks { get; set; }
+    public bool IsActive { get; set; }
 }

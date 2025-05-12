@@ -1,7 +1,9 @@
 using System.Text;
 using Aniyuu.DbContext;
 using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.AnimeInterfaces;
 using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.Services.AnimeServices;
 using Aniyuu.Services.MessageBroker;
 using Aniyuu.Services.UserServices;
 using Aniyuu.Utils;
@@ -31,6 +33,7 @@ public sealed class ServiceCaller
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IMessagePublisherService, MessagePublisherService>();
+        services.AddScoped<IAnimeService, AnimeService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
