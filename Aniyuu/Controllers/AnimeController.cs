@@ -1,6 +1,7 @@
 ﻿using Aniyuu.Interfaces.AnimeInterfaces;
 using Aniyuu.Models.AnimeModels;
 using Aniyuu.ViewModels.AnimeViewModels;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
@@ -9,45 +10,70 @@ namespace Aniyuu.Controllers;
 
 
 [ApiController]
-[Route("anime/admin")]
+[Route("anime")]
 [EnableCors("CorsApi")]
-[Authorize(Roles = "admin")]
-public class AnimeController(IAnimeService animeService) : ControllerBase
+public class AnimeController(IAnimeService animeService,
+    IMapper mapper) : ControllerBase
 {
-    [HttpGet("get")]
-    public async Task<AnimeModel> Get(int malId, CancellationToken cancellationToken)
-    {
-        var animeModel = await animeService.Get(malId, cancellationToken);
-        return animeModel;
-    }
-
-    [HttpGet("get-all")]
-    public async Task<List<AnimeModel>> GetAll(CancellationToken cancellationToken)
+    [HttpGet("get-anime-images")]
+    public async Task<ActionResult<List<AnimeImageViewModel>>> GetAnimeImages(CancellationToken cancellationToken)
     {
         var animeModels = await animeService.GetAll(cancellationToken);
-        return animeModels;
+        var animeImageModels = mapper.Map<List<AnimeImageViewModel>>(animeModels);
+        return animeImageModels;
     }
     
-    [HttpPost("create-anime")]
+    [Authorize(Roles = "admin")]
+    [HttpGet("admin/is-anime-exists")]
+    public async Task<bool> IsAnimeExists(int malAnimeId, CancellationToken cancellationToken)
+    {
+        return await animeService.IsAnimeExist(malAnimeId, cancellationToken)!;
+    }
+    
+    [Authorize]
+    [HttpGet("get")]
+    public async Task<AnimeViewModel> Get(int malId, CancellationToken cancellationToken)
+    {
+        var animeModel = await animeService.Get(malId, cancellationToken);
+        var animeViewModel = mapper.Map<AnimeViewModel>(animeModel);
+        return animeViewModel;
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpGet("admin/get-all")]
+    public async Task<List<AnimeViewModel>> GetAll(CancellationToken cancellationToken)
+    {
+        var animeModels = await animeService.GetAll(cancellationToken);
+        var animeViewModels = mapper.Map<List<AnimeViewModel>>(animeModels);
+        return animeViewModels;
+    }
+    
+    [Authorize(Roles = "admin")]
+    [HttpPost("admin/create-anime")]
     public async Task<ActionResult<bool>> Create([FromBody] AnimeCreateViewModel animeCreateViewModel,
         CancellationToken cancellationToken)
     {
         return await animeService.Create(animeCreateViewModel.MalId,
-            animeCreateViewModel.BackdropLink,
+            animeCreateViewModel.BackdropLink!,
             animeCreateViewModel.Tags,
             animeCreateViewModel.Trailers,
             cancellationToken);
     }
 
-    [HttpDelete("delete")]
+    [Authorize(Roles = "admin")]
+    [HttpDelete("admin/delete")]
     public async Task<bool> Delete(int malAnimeId, CancellationToken cancellationToken)
     {
         return await animeService.Delete(malAnimeId, cancellationToken);
     }
 
-    [HttpGet("is-anime-exists")]
-    public async Task<bool> IsAnimeExists(int malAnimeId, CancellationToken cancellationToken)
+    [Authorize(Roles = "admin")]
+    [HttpPut("admin/update-anime")]
+    public async Task<AnimeViewModel> Update(int malId, string updatedBy, [FromBody] AnimeUpdateViewModel animeUpdateViewModel, CancellationToken cancellationToken)
     {
-        return await animeService.IsAnimeExist(malAnimeId, cancellationToken);
+        var animeModel = mapper.Map<AnimeModel>(animeUpdateViewModel);
+        var result = await animeService.Update(malId, animeModel, cancellationToken, updatedBy);
+        var resultViewModel = mapper.Map<AnimeViewModel>(result);
+        return resultViewModel;
     }
 }
