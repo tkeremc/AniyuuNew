@@ -46,7 +46,7 @@ public class AuthService(
             throw new AppException("Error during registration", 500);
         }
         var code = await activationService.GenerateActivationCode(userModel.Email, cancellationToken);
-        emailService.SendWelcomeEmail(userModel.Email, userModel.Username, code ,cancellationToken);
+        _ = emailService.SendWelcomeEmail(userModel.Email, userModel.Username, code ,cancellationToken);
         
         return true;
     }
@@ -76,17 +76,16 @@ public class AuthService(
             throw new AppException("Password is incorrect");
         }
 
-        var accessToken = await tokenService.GenerateAccessToken(user.Id, cancellationToken);
-        var refreshToken = await tokenService.GenerateRefreshToken(user.Id, deviceId, cancellationToken);
+        var accessToken = await tokenService.GenerateAccessToken(user.Id!, cancellationToken);
+        var refreshToken = await tokenService.GenerateRefreshToken(user.Id!, deviceId, cancellationToken);
 
         if (!user.Devices.Contains(deviceId))
         {
             var filter = Builders<UserModel>.Filter.Eq(x => x.Email, email);
             var update = Builders<UserModel>.Update.AddToSet(x => x.Devices, deviceId);
             await _userCollection.UpdateOneAsync(filter, update, null, cancellationToken);
+            _ = emailService.NewDeviceLoginEmail(user.Email!, user.Username!, cancellationToken);
         }
-        
-        emailService.NewDeviceLoginEmail(user.Email, user.Username, cancellationToken);
         
         return new TokensModel
         {
@@ -122,7 +121,7 @@ public class AuthService(
             };
 
             await _passTokenCollection.InsertOneAsync(passResetToken, cancellationToken);
-            emailService.PasswordResetEmail(email, user.Username, passResetToken.PasswordToken, cancellationToken);
+            _ = emailService.PasswordResetEmail(email, user.Username, passResetToken.PasswordToken, cancellationToken);
 
             return $"Password reset email has been sent to {email}";
         }

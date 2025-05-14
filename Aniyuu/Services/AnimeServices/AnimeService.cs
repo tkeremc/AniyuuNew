@@ -14,6 +14,8 @@ public class AnimeService(IMongoDbContext mongoDbContext,
 {
     private readonly IMongoCollection<AnimeModel> _animeCollection = mongoDbContext
         .GetCollection<AnimeModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
+    private readonly IMongoCollection<GenreModel> _animeGenreCollection = mongoDbContext
+        .GetCollection<GenreModel>(AppSettingConfig.Configuration["MongoDBSettings:GenreCollection"]!);
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     public async Task<List<AnimeModel>> GetAll(CancellationToken cancellationToken)
@@ -42,15 +44,14 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             var anime = await _animeCollection.Find(x => x.MALId == malId && x.IsActive == true).FirstOrDefaultAsync(cancellationToken);
             if (anime == null)
             {
-                Logger.Error("[AnimeService.Get] Anime not found.");
                 throw new AppException("Anime not found.", 409);
             }
             return anime;
         }
         catch (Exception e)
         {
-            Logger.Error("[AnimeService.Get] Mongo query failed.");
-            throw new AppException("Mongo query failed.", 500);
+            Logger.Error("[AnimeService.Get] Anime not found or query failed.");
+            throw new AppException("Anime not found or query failed.", 500);
         }
     }
 
@@ -65,6 +66,18 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         var malData = await GetMalData(malAnimeId, cancellationToken);
         var newAnime = new AnimeModel();
         await InitialModelUpdate(newAnime, malData, backdropLink, tags, trailers);
+
+        GenreModel genreModel;
+        foreach (var genre in newAnime.Genre)
+        {
+            genreModel = new GenreModel()
+            {
+                GenreId = genre.Id,
+                GenreName = genre.Name,
+                Description = "not set"
+            };
+            _ = SaveGenre(genreModel, cancellationToken);
+        }
 
         try
         {
@@ -116,7 +129,8 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             Logger.Error("[AnimeService.Delete] Anime not found.");
             throw new AppException("Anime not found.", 409);
         }
-        var filter = Builders<AnimeModel>.Filter.Eq("MALId", malId);
+        var filter = Builders<AnimeModel>.Filter.And(Builders<AnimeModel>.Filter.Eq("MALId", malId),
+            Builders<AnimeModel>.Filter.Eq("IsActive", true));
         var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false);
         
         try
@@ -194,6 +208,25 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         {
             Logger.Error($"[AnimeService.GetMalData] Api response exception: {e.Message}");
             throw new AppException("Api response exception occurred.", 404);
+        }
+    }
+
+    private async Task SaveGenre(GenreModel genreModel, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (genreModel == null! || await _animeGenreCollection.Find(x => x.GenreId == genreModel.GenreId)
+                    .AnyAsync(cancellationToken))
+            {
+                throw new AppException("Genre already exists or genreModel is null.", 409);
+            }
+
+            await _animeGenreCollection.InsertOneAsync(genreModel, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[AnimeService.SaveGenre] Server problem: {e.Message}");
+            throw new AppException("Server error.", 500);
         }
     }
 }
