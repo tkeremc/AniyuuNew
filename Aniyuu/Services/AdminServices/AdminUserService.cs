@@ -17,10 +17,12 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     
-    public async Task<List<UserModel>> GetAllUsers(CancellationToken cancellationToken)
+    public async Task<List<UserModel>> GetAllUsers(int page, int count, CancellationToken cancellationToken)
     {
         var users = await _userCollection
             .Find(x => x.IsDeleted == false)
+            .Skip((page - 1) * count)
+            .Limit(count)
             .ToListAsync(cancellationToken: cancellationToken);
         if (users.Count == 0 || users == null)
         {
@@ -50,7 +52,7 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
     public async Task<bool> SetUserAsAdmin(string username, CancellationToken cancellationToken)
     {
         var updatedUser = await UpdateUser(username, "admin", cancellationToken);
-        return updatedUser.Roles.Contains("admin");
+        return updatedUser.Roles!.Contains("admin");
     }
 
     public async Task<bool> DeleteUser(string username, CancellationToken cancellationToken)
@@ -62,6 +64,12 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
     private async Task<UserModel> UpdateUser(string username, string updateType, CancellationToken cancellationToken)
     {
         var user = await GetUser(username, cancellationToken);
+
+        if (updateType == "admin" && user.Roles!.Contains("admin"))
+        {
+            Logger.Error("[AdminUserService.UpdateUser] User is admin");
+            throw new AppException("User is already admin.");
+        }
         
         var filter = Builders<UserModel>.Filter.And(
             Builders<UserModel>.Filter.Eq(x => x.Id, user.Id),
@@ -79,6 +87,15 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
                 .Set(x => x.UpdatedAt, DateTime.UtcNow),
             _ => throw new AppException("Invalid update type", 404)
         };
+        switch (updateType)
+        {
+            case "delete":
+                user.IsDeleted = true;
+                break;
+            case "admin":
+                user.Roles!.Add("admin");
+                break;
+        }
         try
         {
             var result = await _userCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
@@ -92,6 +109,7 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
             Logger.Error($"[AdminUserService.UpdateUser] Error updating user: {e.Message}");
             throw new AppException("An error occured while updating user", 500);
         }
-        return await GetUser(username, cancellationToken);
+
+        return user;
     }
 }

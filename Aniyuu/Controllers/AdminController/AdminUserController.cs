@@ -15,9 +15,9 @@ public class AdminUserController(IAdminUserService adminUserService,
     IMapper mapper) : ControllerBase
 {
     [HttpGet("get-all")]
-    public async Task<ActionResult<List<UserViewModel>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<UserViewModel>>> GetAll(int page, int count, CancellationToken cancellationToken)
     {
-        var users = await adminUserService.GetAllUsers(cancellationToken);
+        var users = await adminUserService.GetAllUsers(page, count, cancellationToken);
         var userViewModel = mapper.Map<List<UserViewModel>>(users);
         return userViewModel;
     }
