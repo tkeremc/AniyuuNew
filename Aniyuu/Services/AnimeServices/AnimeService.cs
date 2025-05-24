@@ -16,6 +16,8 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         .GetCollection<AnimeModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
     private readonly IMongoCollection<GenreModel> _animeGenreCollection = mongoDbContext
         .GetCollection<GenreModel>(AppSettingConfig.Configuration["MongoDBSettings:GenreCollection"]!);
+    private readonly IMongoCollection<StudioModel> _studioCollection = mongoDbContext
+        .GetCollection<StudioModel>(AppSettingConfig.Configuration["MongoDBSettings:StudioCollection"]!);
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     public async Task<List<AnimeModel>> GetAll(CancellationToken cancellationToken)
@@ -77,6 +79,15 @@ public class AnimeService(IMongoDbContext mongoDbContext,
             _ = SaveGenre(genreModel, cancellationToken);
         }
 
+        foreach (var studioModel in newAnime.Studios!.Select(studio => new StudioModel
+                 {
+                     StudioId = studio.Id,
+                     StudioName = studio.Name
+                 }))
+        {
+            _ = SaveStudio(studioModel, cancellationToken);
+        }
+        
         try
         {
             await _animeCollection.InsertOneAsync(newAnime, cancellationToken);
@@ -223,6 +234,24 @@ public class AnimeService(IMongoDbContext mongoDbContext,
         catch (Exception e)
         {
             Logger.Error($"[AnimeService.SaveGenre] Server problem: {e.Message}");
+            throw new AppException("Server error.", 500);
+        }
+    }
+
+    private async Task SaveStudio(StudioModel studioModel, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (studioModel== null || await _studioCollection.Find(x => x.StudioId == studioModel.StudioId).AnyAsync(cancellationToken))
+            {
+                throw new AppException("Studio already exists or studioModel is null.", 409);
+            }
+            
+            await  _studioCollection.InsertOneAsync(studioModel, cancellationToken);
+        }
+        catch (Exception e)
+        {
+            Logger.Error($"[AnimeService.SaveStudio] Server problem: {e.Message}");
             throw new AppException("Server error.", 500);
         }
     }
