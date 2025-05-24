@@ -8,7 +8,14 @@ public class TokenAuthenticationHandler(RequestDelegate next)
     public async Task Invoke(HttpContext context)
     {
         string deviceId = context.Request.Headers["device-id"];
-        context.Request.Headers["X-Device-Id"] = deviceId;
+        if (deviceId == null)
+        {
+            context.Request.Headers["X-Device-Id"] = "not specified";
+        }
+        else
+        {
+            context.Request.Headers["X-Device-Id"] = deviceId;
+        }
         
         var ipAddress = context.Request.Headers["X-Forwarded-For"].FirstOrDefault() 
                         ?? context.Connection.RemoteIpAddress?.ToString();

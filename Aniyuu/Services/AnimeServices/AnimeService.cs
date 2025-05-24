@@ -65,17 +65,15 @@ public class AnimeService(IMongoDbContext mongoDbContext,
 
         var malData = await GetMalData(malAnimeId, cancellationToken);
         var newAnime = new AnimeModel();
-        await InitialModelUpdate(newAnime, malData, backdropLink, tags, trailers);
+        await InitialModelUpdate(newAnime, malData!, backdropLink, tags, trailers);
 
-        GenreModel genreModel;
-        foreach (var genre in newAnime.Genre)
+        foreach (var genreModel in newAnime.Genre!.Select(genre => new GenreModel
+                 {
+                     GenreId = genre.Id,
+                     GenreName = genre.Name,
+                     Description = "not set"
+                 }))
         {
-            genreModel = new GenreModel()
-            {
-                GenreId = genre.Id,
-                GenreName = genre.Name,
-                Description = "not set"
-            };
             _ = SaveGenre(genreModel, cancellationToken);
         }
 
@@ -110,7 +108,6 @@ public class AnimeService(IMongoDbContext mongoDbContext,
                 .ReplaceOneAsync(x => x.MALId == malId, animeModel, cancellationToken: cancellationToken);
             if (result.ModifiedCount == 0)
             {
-                Logger.Error("[AnimeService.Update] Anime not updated.");
                 throw new AppException("Anime not updated.", 500);
             }
         }

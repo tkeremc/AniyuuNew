@@ -18,7 +18,7 @@ public class ActivationController(IActivationService activationService) : Contro
         return result ? Ok(result) : BadRequest(result);
     }
     
-    [HttpGet("resend-activation")]
+    [HttpGet("resend-to-email")]
     public async Task<ActionResult<bool>> ResendActivation(string email, CancellationToken cancellationToken)
     {
         var result = await activationService.ResendActivationCode(email, cancellationToken);

@@ -4,6 +4,7 @@ using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.ViewModels;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace Aniyuu.Controllers;
 
@@ -37,7 +38,7 @@ public class StatusController(IUserService userService,
     public async Task<IActionResult> TestMessageMailed(string to, string exchangeName, string routingKey,
         CancellationToken cancellationToken)
     {
-        var message = new EmailMessageViewModel()
+        var message = new EmailMessageViewModel
         {
             To = to,
             Subject = "Test",
@@ -49,8 +50,8 @@ public class StatusController(IUserService userService,
                 { "code", "123456" }
             }
         };
-        messagePublisherService.PublishAsync(message, exchangeName, routingKey);
-        return Ok($"Test Message sent to {routingKey}. Message: {message}.");
+        _ = messagePublisherService.PublishAsync(message, exchangeName, routingKey);
+        return Ok($"Test Message sent to {routingKey}. Message: {message.ToJson()}.");
     }
     [HttpGet("get-client-details")]
     public IActionResult GetBrowserDetails()

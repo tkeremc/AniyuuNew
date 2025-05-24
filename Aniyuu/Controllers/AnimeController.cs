@@ -23,13 +23,6 @@ public class AnimeController(IAnimeService animeService,
         return animeImageModels;
     }
     
-    [Authorize(Roles = "admin")]
-    [HttpGet("admin/is-anime-exists")]
-    public async Task<bool> IsAnimeExists(int malAnimeId, CancellationToken cancellationToken)
-    {
-        return await animeService.IsAnimeExist(malAnimeId, cancellationToken)!;
-    }
-    
     [Authorize]
     [HttpGet("get")]
     public async Task<AnimeViewModel> Get(int malId, CancellationToken cancellationToken)
@@ -38,14 +31,21 @@ public class AnimeController(IAnimeService animeService,
         var animeViewModel = mapper.Map<AnimeViewModel>(animeModel);
         return animeViewModel;
     }
-
-    [Authorize(Roles = "admin")]
-    [HttpGet("admin/get-all")]
-    public async Task<List<AnimeViewModel>> GetAll(CancellationToken cancellationToken)
+    
+    [Authorize]
+    [HttpGet("user/get")]
+    public async Task<List<AnimeViewModel>> GetAnime(CancellationToken cancellationToken, int page = 1, int size = 10)
     {
-        var animeModels = await animeService.GetAll(cancellationToken);
-        var animeViewModels = mapper.Map<List<AnimeViewModel>>(animeModels);
-        return animeViewModels;
+        var animes = await animeService.GetAll(cancellationToken);
+        var animeViewModel = mapper.Map<List<AnimeViewModel>>(animes);
+        return animeViewModel.Skip((page -1) * size).Take(size).ToList();
+    }
+    
+    [Authorize(Roles = "admin")]
+    [HttpGet("admin/is-anime-exists")]
+    public async Task<bool> IsAnimeExists(int malAnimeId, CancellationToken cancellationToken)
+    {
+        return await animeService.IsAnimeExist(malAnimeId, cancellationToken)!;
     }
     
     [Authorize(Roles = "admin")]
