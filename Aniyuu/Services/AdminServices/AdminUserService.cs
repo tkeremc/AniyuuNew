@@ -20,7 +20,7 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
     public async Task<List<UserModel>> GetAllUsers(CancellationToken cancellationToken)
     {
         var users = await _userCollection
-            .Find(x => x.IsActive == true)
+            .Find(x => x.IsDeleted == false)
             .ToListAsync(cancellationToken: cancellationToken);
         if (users.Count == 0 || users == null)
         {
@@ -37,7 +37,7 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
         
         
         var user = await _userCollection
-            .Find(x => x.IsActive == true && x.Username == username)
+            .Find(x => x.IsDeleted == false && x.Username == username)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
         if (user == null)
         {
@@ -65,7 +65,7 @@ public class AdminUserService(IMongoDbContext mongoDbContext,
         
         var filter = Builders<UserModel>.Filter.And(
             Builders<UserModel>.Filter.Eq(x => x.Id, user.Id),
-            Builders<UserModel>.Filter.Eq(x => x.IsActive, true));
+            Builders<UserModel>.Filter.Eq(x => x.IsDeleted, false));
         var update = updateType switch
         {
             "admin" => Builders<UserModel>.Update
