@@ -1,8 +1,10 @@
 using System.Text;
 using Aniyuu.DbContext;
 using Aniyuu.Interfaces;
+using Aniyuu.Interfaces.AdminServices;
 using Aniyuu.Interfaces.AnimeInterfaces;
 using Aniyuu.Interfaces.UserInterfaces;
+using Aniyuu.Services.AdminServices;
 using Aniyuu.Services.AnimeServices;
 using Aniyuu.Services.MessageBroker;
 using Aniyuu.Services.UserServices;
@@ -34,6 +36,8 @@ public sealed class ServiceCaller
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IMessagePublisherService, MessagePublisherService>();
         services.AddScoped<IAnimeService, AnimeService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
+        services.AddScoped<IAdminAnimeService, AdminAnimeService>();
     }
 
     private static void SingletonServices(IServiceCollection services)
@@ -68,7 +72,7 @@ public sealed class ServiceCaller
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
-                Type = SecuritySchemeType.Http,
+                Type = SecuritySchemeType.ApiKey,
                 Scheme = "Bearer",
                 BearerFormat = "JWT",
                 In = ParameterLocation.Header,
@@ -80,8 +84,7 @@ public sealed class ServiceCaller
             {
                 Name = "device-id", // Header key adı
                 Type = SecuritySchemeType.ApiKey,
-                In = ParameterLocation.Header,
-                Description = "Cihazınıza özel kimlik (UUID). Örneğin: '123e4567-e89b-12d3-a456-426614174000'"
+                In = ParameterLocation.Header
             });
 
             

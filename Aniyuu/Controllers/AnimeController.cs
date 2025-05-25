@@ -15,20 +15,6 @@ namespace Aniyuu.Controllers;
 public class AnimeController(IAnimeService animeService,
     IMapper mapper) : ControllerBase
 {
-    [HttpGet("get-anime-images")]
-    public async Task<ActionResult<List<AnimeImageViewModel>>> GetAnimeImages(CancellationToken cancellationToken)
-    {
-        var animeModels = await animeService.GetAll(cancellationToken);
-        var animeImageModels = mapper.Map<List<AnimeImageViewModel>>(animeModels);
-        return animeImageModels;
-    }
-    
-    [Authorize(Roles = "admin")]
-    [HttpGet("admin/is-anime-exists")]
-    public async Task<bool> IsAnimeExists(int malAnimeId, CancellationToken cancellationToken)
-    {
-        return await animeService.IsAnimeExist(malAnimeId, cancellationToken)!;
-    }
     
     [Authorize]
     [HttpGet("get")]
@@ -39,41 +25,12 @@ public class AnimeController(IAnimeService animeService,
         return animeViewModel;
     }
 
-    [Authorize(Roles = "admin")]
-    [HttpGet("admin/get-all")]
-    public async Task<List<AnimeViewModel>> GetAll(CancellationToken cancellationToken)
+    [Authorize]
+    [HttpGet("get-all")]
+    public async Task<List<AnimeModel>> GetAll(CancellationToken cancellationToken, int page = 1, int count = 10)
     {
-        var animeModels = await animeService.GetAll(cancellationToken);
-        var animeViewModels = mapper.Map<List<AnimeViewModel>>(animeModels);
-        return animeViewModels;
-    }
-    
-    [Authorize(Roles = "admin")]
-    [HttpPost("admin/create-anime")]
-    public async Task<ActionResult<bool>> Create([FromBody] AnimeCreateViewModel animeCreateViewModel,
-        CancellationToken cancellationToken)
-    {
-        return await animeService.Create(animeCreateViewModel.MalId,
-            animeCreateViewModel.BackdropLink!,
-            animeCreateViewModel.Tags,
-            animeCreateViewModel.Trailers,
-            cancellationToken);
-    }
-
-    [Authorize(Roles = "admin")]
-    [HttpDelete("admin/delete")]
-    public async Task<bool> Delete(int malAnimeId, CancellationToken cancellationToken)
-    {
-        return await animeService.Delete(malAnimeId, cancellationToken);
-    }
-
-    [Authorize(Roles = "admin")]
-    [HttpPut("admin/update-anime")]
-    public async Task<AnimeViewModel> Update(int malId, string updatedBy, [FromBody] AnimeUpdateViewModel animeUpdateViewModel, CancellationToken cancellationToken)
-    {
-        var animeModel = mapper.Map<AnimeModel>(animeUpdateViewModel);
-        var result = await animeService.Update(malId, animeModel, cancellationToken, updatedBy);
-        var resultViewModel = mapper.Map<AnimeViewModel>(result);
-        return resultViewModel;
+        var animeModel = await animeService.GetAll(page, count, cancellationToken);
+        var animeViewModel = mapper.Map<List<AnimeModel>>(animeModel);
+        return animeViewModel;
     }
 }

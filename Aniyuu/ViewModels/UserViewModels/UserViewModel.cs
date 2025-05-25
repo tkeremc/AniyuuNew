@@ -9,5 +9,6 @@ public class UserViewModel
     public bool? IsActive { get; set; }
     public int? WatchTime { get; set; }
     public string? Gender { get; set; }
+    public List<string?> Roles { get; set; }
     public DateTime CreatedAt { get; set; }
 }

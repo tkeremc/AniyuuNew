@@ -33,6 +33,12 @@ public class AuthService(
             Logger.Error($"[AuthService.Register] Email ({userModel.Email}) already registered");
             throw new AppException("User already exists", 409);
         }
+
+        if (await _userCollection.Find(x=>x.Username == userModel.Username && x.IsDeleted == false).AnyAsync(cancellationToken))
+        {
+            Logger.Error($"[AuthService.Register] Username ({userModel.Username}) already registered");
+            throw new AppException("User already exists", 409);
+        }
         
         await InitialModelUpdate(userModel);
         //fluent validation yapılmalı
