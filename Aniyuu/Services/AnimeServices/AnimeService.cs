@@ -1,12 +1,10 @@
 ﻿using Aniyuu.DbContext;
 using Aniyuu.Exceptions;
-using Aniyuu.Helpers;
 using Aniyuu.Interfaces.AnimeInterfaces;
 using Aniyuu.Models.AnimeModels;
 using Aniyuu.Utils;
-using Aniyuu.ViewModels.AnimeViewModels;
 using MongoDB.Driver;
-using MongoDB.Driver.Linq;
+using MongoDB.Driver.Search;
 using NLog;
 
 namespace Aniyuu.Services.AnimeServices;
@@ -46,20 +44,39 @@ public class AnimeService(IMongoDbContext mongoDbContext) :  IAnimeService
         return animes;
     }
 
-    public async Task<List<AnimeModel>> Search(string _query, int page, int count, CancellationToken cancellationToken)
+    public async Task<List<AnimeModel>> Search(string query, int page, int count, CancellationToken cancellationToken)
     {
-        var result = await _animeCollection.Aggregate()
-            .Search(Builders<AnimeModel>.Search.Text(g => g.Title, _query), indexName: "default")
-            .Skip((page - 1) * count)
+        var fuzzyOptions = new SearchFuzzyOptions
+        {
+            MaxEdits = 1,
+            PrefixLength = 3
+        };
+        
+        var search = Builders<AnimeModel>.Search.Compound()
+            .Must(
+                Builders<AnimeModel>.Search.Autocomplete(
+                    x => x.Title,
+                    query,
+                    SearchAutocompleteTokenOrder.Any,
+                    fuzzyOptions
+                )
+                )
+            .Should(
+                Builders<AnimeModel>.Search.Text(x => x.Slug, query),
+                Builders<AnimeModel>.Search.Text("AlternativeTitles.En", query),
+                Builders<AnimeModel>.Search.Text("AlternativeTitles.Ja", query),
+                Builders<AnimeModel>.Search.Text("AlternativeTitles.Synonyms", query)
+            )
+            .Filter(Builders<AnimeModel>.Search.Equals(x => x.IsActive, true));
+
+        var results = await _animeCollection.Aggregate()
+            .Search(search)
+            .Skip((page -1) * count)
             .Limit(count)
-            .ToListAsync(cancellationToken);
-        
-        
-        var queryablecollection = _animeCollection.AsQueryable();
-        var query = queryablecollection
-            .Search(Builders<AnimeModel>.Search.Text(g => g.Title, _query), indexName: "default")
-            .Select(g => new AnimeSearchResultViewModel());
-        
-        return result;
+            .ToListAsync(cancellationToken: cancellationToken);
+
+        if (results.Count != 0) return results;
+        Logger.Info("No results.");
+        throw new AppException("No results.", 404);
     }
 }
