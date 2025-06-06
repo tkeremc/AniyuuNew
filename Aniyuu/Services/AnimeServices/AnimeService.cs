@@ -72,6 +72,7 @@ public class AnimeService(IMongoDbContext mongoDbContext) :  IAnimeService
         var results = await _animeCollection.Aggregate()
             .Search(search)
             .Skip((page -1) * count)
+            .SortByDescending(x => x.SearchScore)
             .Limit(count)
             .ToListAsync(cancellationToken: cancellationToken);
 
