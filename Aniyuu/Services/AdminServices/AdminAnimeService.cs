@@ -88,7 +88,7 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
 
     public async Task<AnimeModel> Update(int malId, AnimeModel animeModel, CancellationToken cancellationToken, string updatedBy = "system")
     {
-        if (!await IsAnimeExist(malId, cancellationToken)!)
+        if (!await IsAnimeExist(malId, cancellationToken))
         {
             Logger.Error("[AnimeService.Update] Anime not found.");
             throw new AppException("Anime not found.", 409);

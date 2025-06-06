@@ -41,4 +41,11 @@ public class AnimeModel : BaseModel
     public string? BunnyLibraryId { get; set; }
     public List<string>? TrailerLinks { get; set; }
     public bool IsActive { get; set; }
+    
+    
+    [BsonIgnoreIfDefault]
+    [BsonElement("score")]
+    [BsonRepresentation(BsonType.Double)]
+    public double SearchScore { get; set; }
+
 }
