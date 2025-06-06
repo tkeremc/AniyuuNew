@@ -27,10 +27,18 @@ public class AnimeController(IAnimeService animeService,
 
     [Authorize]
     [HttpGet("get-all")]
-    public async Task<List<AnimeModel>> GetAll(CancellationToken cancellationToken, int page = 1, int count = 10)
+    public async Task<List<AnimeViewModel>> GetAll(CancellationToken cancellationToken, int page = 1, int count = 10)
     {
         var animeModel = await animeService.GetAll(page, count, cancellationToken);
-        var animeViewModel = mapper.Map<List<AnimeModel>>(animeModel);
+        var animeViewModel = mapper.Map<List<AnimeViewModel>>(animeModel);
+        return animeViewModel;
+    }
+
+    [HttpGet("search")]
+    public async Task<List<AnimeSearchResultViewModel>> Search(string query, CancellationToken cancellationToken, int page = 1, int count = 10)
+    {
+        var result = await animeService.Search(query, page, count, cancellationToken);
+        var animeViewModel = mapper.Map<List<AnimeSearchResultViewModel>>(result);
         return animeViewModel;
     }
 }

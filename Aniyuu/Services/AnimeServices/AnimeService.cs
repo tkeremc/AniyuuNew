@@ -4,7 +4,9 @@ using Aniyuu.Helpers;
 using Aniyuu.Interfaces.AnimeInterfaces;
 using Aniyuu.Models.AnimeModels;
 using Aniyuu.Utils;
+using Aniyuu.ViewModels.AnimeViewModels;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 using NLog;
 
 namespace Aniyuu.Services.AnimeServices;
@@ -42,5 +44,22 @@ public class AnimeService(IMongoDbContext mongoDbContext) :  IAnimeService
             .ToListAsync(cancellationToken);
         
         return animes;
+    }
+
+    public async Task<List<AnimeModel>> Search(string _query, int page, int count, CancellationToken cancellationToken)
+    {
+        var result = await _animeCollection.Aggregate()
+            .Search(Builders<AnimeModel>.Search.Text(g => g.Title, _query), indexName: "default")
+            .Skip((page - 1) * count)
+            .Limit(count)
+            .ToListAsync(cancellationToken);
+        
+        
+        var queryablecollection = _animeCollection.AsQueryable();
+        var query = queryablecollection
+            .Search(Builders<AnimeModel>.Search.Text(g => g.Title, _query), indexName: "default")
+            .Select(g => new AnimeSearchResultViewModel());
+        
+        return result;
     }
 }
