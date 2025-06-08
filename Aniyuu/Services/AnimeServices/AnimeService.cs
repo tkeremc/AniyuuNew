@@ -80,4 +80,17 @@ public class AnimeService(IMongoDbContext mongoDbContext) :  IAnimeService
         Logger.Info("No results.");
         throw new AppException("No results.", 404);
     }
+
+    public async Task<List<AnimeModel>> GetMostPopular(CancellationToken cancellationToken)
+    {
+        var animes = await _animeCollection
+            .Find(x => true)
+            .SortByDescending(x => x.MALScore)
+            .Limit(6)
+            .ToListAsync(cancellationToken);
+        if (animes.Count != 0)
+            return animes;
+        Logger.Info("No results.");
+        throw new AppException("No results.", 404);
+    }
 }
