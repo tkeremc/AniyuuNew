@@ -34,6 +34,7 @@ public class AnimeController(IAnimeService animeService,
         return animeViewModel;
     }
 
+    [Authorize]
     [HttpGet("search")]
     public async Task<ActionResult<List<AnimeSearchResultViewModel>>> Search(string query, CancellationToken cancellationToken, int page = 1, int count = 10)
     {
@@ -47,5 +48,18 @@ public class AnimeController(IAnimeService animeService,
         var result = await animeService.Search(query, page, count, cancellationToken);
         var animeViewModel = mapper.Map<List<AnimeSearchResultViewModel>>(result);
         return animeViewModel;
+    }
+
+    [HttpGet("get-popular")]
+    public async Task<ActionResult<List<PopularAnimeViewModel>>> GetPopular(CancellationToken cancellationToken)
+    {
+        var animes = await animeService.GetMostPopular(cancellationToken);
+        const int maxLength = 50;
+        foreach (var anime in animes)
+        {
+            anime.Description = anime.Description!.Length > maxLength ? anime.Description[..maxLength] + "..." : anime.Description;
+        }
+        var popularAnimeViewModel = mapper.Map<List<PopularAnimeViewModel>>(animes);
+        return popularAnimeViewModel;
     }
 }
