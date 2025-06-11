@@ -14,6 +14,6 @@ public class AnimeProfile :  Profile
         CreateMap<AnimeViewModel, AnimeModel>().ReverseMap();
         CreateMap<AnimeImageViewModel, AnimeModel>().ReverseMap();
         CreateMap<AnimeSearchResultViewModel, AnimeModel>().ReverseMap();
-        CreateMap<PopularAnimeViewModel, AnimeModel>().ReverseMap();
+        CreateMap<HelloAnimeViewModel, AnimeModel>().ReverseMap();
     }
 }

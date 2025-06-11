@@ -86,7 +86,20 @@ public class AnimeService(IMongoDbContext mongoDbContext) :  IAnimeService
         var animes = await _animeCollection
             .Find(x => true)
             .SortByDescending(x => x.MALScore)
-            .Limit(6)
+            .Limit(12)
+            .ToListAsync(cancellationToken);
+        if (animes.Count != 0)
+            return animes;
+        Logger.Info("No results.");
+        throw new AppException("No results.", 404);
+    }
+
+    public async Task<List<AnimeModel>> GetNewAnimes(CancellationToken cancellationToken)
+    {
+        var animes = await _animeCollection
+            .Find(x => true)
+            .SortByDescending(x => x.ReleaseDate)
+            .Limit(12)
             .ToListAsync(cancellationToken);
         if (animes.Count != 0)
             return animes;

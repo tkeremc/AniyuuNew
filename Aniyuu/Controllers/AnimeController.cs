@@ -51,15 +51,31 @@ public class AnimeController(IAnimeService animeService,
     }
 
     [HttpGet("get-popular")]
-    public async Task<ActionResult<List<PopularAnimeViewModel>>> GetPopular(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<HelloAnimeViewModel>>> GetPopular(CancellationToken cancellationToken)
     {
         var animes = await animeService.GetMostPopular(cancellationToken);
+        var homeAnimeViewModel = mapper.Map<List<HelloAnimeViewModel>>(animes);
+        await ShortDesc(homeAnimeViewModel);
+        return homeAnimeViewModel;
+    }
+
+    [HttpGet("get-new")]
+    public async Task<ActionResult<List<HelloAnimeViewModel>>> GetNewAnimes(CancellationToken cancellationToken)
+    {
+        var animes = await animeService.GetNewAnimes(cancellationToken);
+        var animeViewModel = mapper.Map<List<HelloAnimeViewModel>>(animes);
+        await ShortDesc(animeViewModel);
+        return animeViewModel;
+    }
+
+    private static Task ShortDesc(List<HelloAnimeViewModel> list)
+    {
         const int maxLength = 50;
-        foreach (var anime in animes)
+        foreach (var anime in list)
         {
-            anime.Description = anime.Description!.Length > maxLength ? anime.Description[..maxLength] + "..." : anime.Description;
+            anime.Description = anime.Description!.Length > maxLength ? 
+                anime.Description[..maxLength] + "..." : anime.Description;
         }
-        var popularAnimeViewModel = mapper.Map<List<PopularAnimeViewModel>>(animes);
-        return popularAnimeViewModel;
+        return Task.CompletedTask;
     }
 }
