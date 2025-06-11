@@ -5,3 +5,4 @@ riderModule.iml
 /_ReSharper.Caches/
 
 appsetting.Development.json
+internal-log.txt
