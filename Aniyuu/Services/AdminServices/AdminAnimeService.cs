@@ -3,6 +3,7 @@ using Aniyuu.Exceptions;
 using Aniyuu.Helpers;
 using Aniyuu.Interfaces.AdminServices;
 using Aniyuu.Interfaces.AnimeInterfaces;
+using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models.AnimeModels;
 using Aniyuu.Utils;
 using MongoDB.Driver;
@@ -12,7 +13,8 @@ namespace Aniyuu.Services.AdminServices;
 
 public class AdminAnimeService(IMongoDbContext mongoDbContext,
     IHttpClientFactory httpClientFactory,
-    IAnimeService animeService) :  IAdminAnimeService
+    IAnimeService animeService,
+    ICurrentUserService currentUserService) :  IAdminAnimeService
 {
     private readonly IMongoCollection<AnimeModel> _animeCollection = mongoDbContext
         .GetCollection<AnimeModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
@@ -124,7 +126,9 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         }
         var filter = Builders<AnimeModel>.Filter.And(Builders<AnimeModel>.Filter.Eq("MALId", malId),
             Builders<AnimeModel>.Filter.Eq("IsActive", true));
-        var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false);
+        var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false)
+            .Set(x => x.UpdatedAt, DateTime.UtcNow)
+            .Set(x => x.UpdatedBy, currentUserService.GetUserId());
         
         try
         {

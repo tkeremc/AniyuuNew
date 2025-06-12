@@ -38,6 +38,7 @@ public sealed class ServiceCaller
         services.AddScoped<IAnimeService, AnimeService>();
         services.AddScoped<IAdminUserService, AdminUserService>();
         services.AddScoped<IAdminAnimeService, AdminAnimeService>();
+        services.AddScoped<IAdminAdService, AdminAdService>();
     }
 
     private static void SingletonServices(IServiceCollection services)

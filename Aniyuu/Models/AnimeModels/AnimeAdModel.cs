@@ -3,7 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace Aniyuu.Models.AnimeModels;
 
-public class AnimeADModel : BaseModel
+public class AnimeAdModel : BaseModel
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
