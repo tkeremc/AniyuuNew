@@ -40,6 +40,7 @@ public sealed class ServiceCaller
         services.AddScoped<IAdminAnimeService, AdminAnimeService>();
         services.AddScoped<IAdminAdService, AdminAdService>();
         services.AddScoped<IAdService, AdService>();
+        services.AddScoped<IGenreService, GenreService>();
     }
 
     private static void SingletonServices(IServiceCollection services)

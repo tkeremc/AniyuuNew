@@ -14,7 +14,7 @@ public class GenreService(IMongoDbContext mongoDbContext) : IGenreService
     private readonly IMongoCollection<AnimeModel> _animeCollection = mongoDbContext
         .GetCollection<AnimeModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
     private readonly IMongoCollection<GenreModel> _genreCollection = mongoDbContext
-        .GetCollection<GenreModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
+        .GetCollection<GenreModel>(AppSettingConfig.Configuration["MongoDBSettings:GenreCollection"]!);
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     
     public async Task<List<GenreModel>> GetAll(CancellationToken cancellationToken)
@@ -37,11 +37,20 @@ public class GenreService(IMongoDbContext mongoDbContext) : IGenreService
     {
         var existedGenre = await Get(genreId, cancellationToken);
         
-        genreModel = UpdateCheckHelper.ReplaceNullToOldValues(genreModel, existedGenre);
-
+        if (existedGenre == null)
+        {
+            Logger.Error($"[GenreService.Update] Genre {genreId} not found");
+            throw new AppException($"Genre {genreId} not found",404);
+        }
+        
+        genreModel = UpdateCheckHelper.ReplaceNullToOldValues(existedGenre, genreModel);
+        
+        var filter = Builders<GenreModel>.Filter.Eq(g => g.GenreId, genreId);
+        var update = Builders<GenreModel>.Update.Set(g => g.GenreName, genreModel.GenreName)
+            .Set(g => g.Description, genreModel.Description);
         try
         {
-            var result = await _genreCollection.ReplaceOneAsync(g => g.GenreId == genreId, genreModel, cancellationToken: cancellationToken);
+            var result = await _genreCollection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
             if (result.ModifiedCount == 0)
             {
                 throw new AppException($"Genre {genreId} not updated");
@@ -50,7 +59,7 @@ public class GenreService(IMongoDbContext mongoDbContext) : IGenreService
         catch (Exception e)
         {
             Logger.Error("[GenreService.Update]" + e.Message);
-            throw new AppException($"Genre {genreId} not updated", 404);
+            throw new AppException($"Genre {genreId} not updated", 500);
         }
         
         return genreModel;
