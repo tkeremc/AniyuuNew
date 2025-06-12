@@ -85,7 +85,7 @@ public class AdminAdService(IAnimeService animeService,
 
     public async Task<List<AnimeAdModel>> GetAll(int page, int count, CancellationToken cancellationToken)
     {
-        var ads = await _animeAdCollection.Find(x => x.IsActive == true)
+        var ads = await _animeAdCollection.Find(x => true)
             .Skip((page - 1) * count)
             .Limit(count)
             .ToListAsync(cancellationToken);
@@ -104,7 +104,7 @@ public class AdminAdService(IAnimeService animeService,
         }
         
         var ad = await _animeAdCollection
-            .Find(x => x.MALId == malId && x.IsActive == true)
+            .Find(x => x.MALId == malId)
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
         if (ad != null) return ad;
         Logger.Error("[AdminADService.Get] Advertisement not found");
