@@ -13,6 +13,7 @@ public class AnimeAdModel : BaseModel
     public string? Description { get; set; }
     public string? BackdropLink { get; set; }
     public int? MALId { get; set; }
+    public List<MalGenre>? Genres { get; set; }
     public string? LogoLink { get; set; }
     public bool IsActive { get; set; } = true;
 }

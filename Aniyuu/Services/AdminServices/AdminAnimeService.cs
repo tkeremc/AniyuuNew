@@ -217,8 +217,8 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
             {
                 throw new AppException("Genre already exists or genreModel is null.", 409);
             }
-
-            await _animeGenreCollection.InsertOneAsync(genreModel, cancellationToken);
+            genreModel.GenreName = await TranslateHelper.Translate(genreModel.GenreName);
+            await _animeGenreCollection.InsertOneAsync(genreModel, new InsertOneOptions(), cancellationToken);
         }
         catch (Exception e)
         {

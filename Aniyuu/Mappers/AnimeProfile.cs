@@ -1,4 +1,5 @@
 ﻿using Aniyuu.Models.AnimeModels;
+using Aniyuu.ViewModels.AdminAdViewModels;
 using Aniyuu.ViewModels.AnimeViewModels;
 using AutoMapper;
 

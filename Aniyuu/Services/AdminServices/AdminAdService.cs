@@ -63,12 +63,13 @@ public class AdminAdService(IAnimeService animeService,
             Description = anime.Description,
             LogoLink = logoLink,
             MALId = anime.MALId,
+            Genres = anime.Genre,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             UpdatedBy = currentUserService.GetUserId()
         };
-
+        
         try
         {
             await _animeAdCollection.InsertOneAsync(newAdModel, new InsertOneOptions(), cancellationToken);
