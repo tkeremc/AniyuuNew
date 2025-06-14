@@ -32,7 +32,7 @@ public class AdminAdService(IAnimeService animeService,
         
         var anime = await animeService.Get(malId, cancellationToken);
 
-        if (string.IsNullOrEmpty(anime.BackdropLink))
+        if (string.IsNullOrEmpty(anime.BackdropLink) || anime.BackdropLink == "not set")
         {
             if (string.IsNullOrEmpty(backdropLink))
             {
