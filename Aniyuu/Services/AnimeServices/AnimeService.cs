@@ -88,7 +88,7 @@ public class AnimeService(IMongoDbContext mongoDbContext,
     public async Task<List<AnimeModel>> GetMostPopular(CancellationToken cancellationToken)
     {
         var animes = await _animeCollection
-            .Find(x => true)
+            .Find(x => x.Seasons.Count > 1)
             .SortByDescending(x => x.MALScore)
             .Limit(12)
             .ToListAsync(cancellationToken);
@@ -101,7 +101,7 @@ public class AnimeService(IMongoDbContext mongoDbContext,
     public async Task<List<AnimeModel>> GetNewAnimes(CancellationToken cancellationToken)
     {
         var animes = await _animeCollection
-            .Find(x => true)
+            .Find(x => x.Seasons.Count > 1)
             .SortByDescending(x => x.ReleaseDate)
             .Limit(12)
             .ToListAsync(cancellationToken);

@@ -30,12 +30,9 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         try
         {
             var allAnimes = await _animeCollection.Find(x => x.IsActive == true).ToListAsync(cancellationToken);
-            if (allAnimes == null || allAnimes.Count == 0)
-            {
-                Logger.Error("[AnimeService.GetAll] No animes found.");
-                throw new AppException("Mongo query failed.", 409);
-            }
-            return allAnimes;
+            if (allAnimes != null && allAnimes.Count != 0) return allAnimes;
+            Logger.Error("[AnimeService.GetAll] No animes found.");
+            throw new AppException("Mongo query failed.", 409);
         }
         catch (Exception e)
         {
@@ -71,21 +68,23 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
                  })) _ = SaveStudio(studioModel, cancellationToken);
 
         var prequelAnime = malData.RelatedAnime.Find(x => x.RelationType == "prequel");
-        if (prequelAnime == null) throw new AppException("Prequel anime not found.", 404);
-        var prequelAnimeData = await GetMalData(prequelAnime.Node!.Id, cancellationToken);
-        if (!await IsAnimeExist(prequelAnimeData!.Id, cancellationToken))
+        if (prequelAnime != null)
         {
-            if (prequelAnimeData.MediaType == "tv")
+            var prequelAnimeData = await GetMalData(prequelAnime.Node!.Id, cancellationToken);
+            if (!await IsAnimeExist(prequelAnimeData!.Id, cancellationToken))
             {
-                Logger.Error($"[AnimeService.Create] There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}");
-                throw new AppException($"There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}", 409);
+                if (prequelAnimeData.MediaType == "tv")
+                {
+                    Logger.Error($"[AnimeService.Create] There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}");
+                    throw new AppException($"There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}", 409);
+                }
             }
-        }
-        else
-        {
-            var mainSeason = await animeService.Get(mainAnimeMALId, cancellationToken);
-            mainSeason.Seasons!.Add(newAnime.MALId!.Value);
-            await Update(mainSeason.MALId!.Value, mainSeason,cancellationToken);
+            else
+            {
+                var mainSeason = await animeService.Get(mainAnimeMALId, cancellationToken);
+                mainSeason.Seasons!.Add(newAnime.MALId!.Value);
+                await Update(mainSeason.MALId!.Value, mainSeason,cancellationToken);
+            }
         }
         
         try
