@@ -39,14 +39,14 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         }
         catch (Exception e)
         {
-            Logger.Error("[AnimeService.GetAll] Mongo query failed.");
+            Logger.Error("[AnimeService.GetAll] Mongo query failed. " + e.Message);
             throw new AppException("Mongo query failed.", 500);
         }
     }
 
     public async Task<bool> Create(int malAnimeId, string backdropLink, List<string> tags, List<string> trailers,CancellationToken cancellationToken)
     {
-        if (await IsAnimeExist(malAnimeId, cancellationToken)!)
+        if (await IsAnimeExist(malAnimeId, cancellationToken))
         {
             Logger.Error("[AnimeService.Create] Anime already exist.");
             throw new AppException("Anime already exist.", 409);
@@ -61,27 +61,47 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
                      GenreId = genre.Id,
                      GenreName = genre.Name,
                      Description = "not set"
-                 }))
-        {
-            _ = SaveGenre(genreModel, cancellationToken);
-        }
+                 })) _ = SaveGenre(genreModel, cancellationToken);
 
         foreach (var studioModel in newAnime.Studios!.Select(studio => new StudioModel
                  {
                      StudioId = studio.Id,
                      StudioName = studio.Name
-                 }))
+                 })) _ = SaveStudio(studioModel, cancellationToken);
+
+        var prequelAnime = malData.RelatedAnime.Find(x => x.RelationType == "prequel");
+        if (prequelAnime == null) throw new AppException("Prequel anime not found.", 404);
+        var prequelAnimeData = await GetMalData(prequelAnime.Node!.Id, cancellationToken);
+        if (!await IsAnimeExist(prequelAnimeData!.Id, cancellationToken))
         {
-            _ = SaveStudio(studioModel, cancellationToken);
+            if (prequelAnimeData.MediaType == "tv")
+            {
+                Logger.Error($"[AnimeService.Create] There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}");
+                throw new AppException($"There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}", 409);
+            }
         }
+        else
+        {
+            var previousSeason = await animeService.Get(prequelAnimeData.Id, cancellationToken);
+            previousSeason.Seasons!.Add(newAnime.MALId!.Value);
+            await Update(previousSeason.MALId!.Value, previousSeason,cancellationToken);
+        }
+        
+        // var sequelAnime = malData.RelatedAnime.Find(x => x.RelationType == "sequel");
+        // if (sequelAnime == null) throw new AppException("Sequel anime not found.", 404);
+        // var sequelAnimeData = await GetMalData(sequelAnime.Node!.Id, cancellationToken);
+        // if (!await IsAnimeExist(sequelAnimeData!.Id, cancellationToken))
+        // {
+        //     
+        // }
         
         try
         {
-            await _animeCollection.InsertOneAsync(newAnime, cancellationToken);
+            await _animeCollection.InsertOneAsync(newAnime, new InsertOneOptions(), cancellationToken);
         }
         catch (Exception e)
         {
-            Logger.Error("[AnimeService.Create] Mongo instert failed.");
+            Logger.Error("[AnimeService.Create] Mongo instert failed. " + e.Message);
             throw new AppException("Mongo insert failed.", 500);
         }
         
@@ -119,7 +139,7 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
 
     public async Task<bool> Delete(int malId, CancellationToken cancellationToken)
     {
-        if (!await IsAnimeExist(malId,cancellationToken)!)
+        if (!await IsAnimeExist(malId,cancellationToken))
         {
             Logger.Error("[AnimeService.Delete] Anime not found.");
             throw new AppException("Anime not found.", 409);
@@ -153,16 +173,19 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
     {
         animeModel.Title = malModel.Title;
         animeModel.AlternativeTitles = malModel.AlternativeTitles;
-        animeModel.Description = await TranslateHelper.Translate(malModel.Synopsis);
+        animeModel.Description = await TranslateHelper.Translate(malModel.Synopsis!);
         animeModel.BannerLink = malModel.Pictures![0].Large;
         animeModel.BackdropLink = backdropLink;
-        animeModel.EpisodeCount = malModel.NumEpisodes;
+        animeModel.EpisodeCount = 0;
         animeModel.SeasonCount = 0;
         animeModel.Genre = malModel.Genres;
         animeModel.Tags ??= tags;
         animeModel.ReleaseDate = Convert.ToDateTime(malModel.StartDate);
         animeModel.Status = malModel.Status;
+        animeModel.Seasons ??= [];
+        animeModel.Seasons.Add(malModel.Id);
         animeModel.MALId = malModel.Id;
+        animeModel.SeasonNumber = 0;
         animeModel.MALScore = malModel.Mean;
         animeModel.MALRank = malModel.Rank;
         animeModel.MALRating = malModel.Rating;
@@ -170,8 +193,7 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         animeModel.Source = malModel.Source;
         animeModel.ViewCount = 0;
         animeModel.FavoriteCount = 0;
-        animeModel.Slug = SlugHelper.FormatString(animeModel.Title);
-        animeModel.BunnyLibraryId = "423517";
+        animeModel.Slug = SlugHelper.FormatString(animeModel.Title!);
         animeModel.IsActive = true;
         animeModel.TrailerLinks ??= trailers;
     }
@@ -207,6 +229,7 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
             throw new AppException("Api response exception occurred.", 404);
         }
     }
+    
 
     private async Task SaveGenre(GenreModel genreModel, CancellationToken cancellationToken)
     {
