@@ -1,5 +1,4 @@
 ﻿using Aniyuu.Interfaces.AnimeInterfaces;
-using Aniyuu.Models.AnimeModels;
 using Aniyuu.ViewModels.AnimeViewModels;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -51,15 +50,67 @@ public class AnimeController(IAnimeService animeService,
     }
 
     [HttpGet("get-popular")]
-    public async Task<ActionResult<List<PopularAnimeViewModel>>> GetPopular(CancellationToken cancellationToken)
+    public async Task<ActionResult<List<HelloAnimeViewModel>>> GetPopular(CancellationToken cancellationToken)
     {
         var animes = await animeService.GetMostPopular(cancellationToken);
+        var homeAnimeViewModel = mapper.Map<List<HelloAnimeViewModel>>(animes);
+        await ShortDesc(homeAnimeViewModel);
+        return homeAnimeViewModel;
+    }
+
+    [HttpGet("get-new")]
+    public async Task<ActionResult<List<HelloAnimeViewModel>>> GetNewAnimes(CancellationToken cancellationToken)
+    {
+        var animes = await animeService.GetNewAnimes(cancellationToken);
+        var animeViewModel = mapper.Map<List<HelloAnimeViewModel>>(animes);
+        await ShortDesc(animeViewModel);
+        return animeViewModel;
+    }
+
+    [Authorize]
+    [HttpPost("add-watchlist")]
+    public async Task<ActionResult<bool>> AddWatchlist(int malId, CancellationToken cancellationToken)
+    {
+        if (malId <= 0) return StatusCode(StatusCodes.Status400BadRequest,"Invalid malId");
+        var result = await animeService.AddWatchlist(malId, cancellationToken);
+        return result;
+    }
+    
+    [Authorize]
+    [HttpDelete("remove-watchlist")]
+    public async Task<ActionResult<bool>> RemoveWatchlist(int malId, CancellationToken cancellationToken)
+    {
+        if (malId <= 0) return StatusCode(StatusCodes.Status400BadRequest,"Invalid malId");
+        var result = await animeService.RemoveWatchlist(malId, cancellationToken);
+        return result;
+    }
+
+    [Authorize]
+    [HttpGet("get-watchlist")]
+    public async Task<ActionResult<List<AnimeSearchResultViewModel>>> GetWatchlist(CancellationToken cancellationToken, int page = 1, int count = 10)
+    {
+        if (page <= 0) page = 1;
+        if (count <= 0) count = 1;
+        
+        var animes = await animeService.GetWatchlist(page, count, cancellationToken);
+        var animeViewModel = mapper.Map<List<AnimeSearchResultViewModel>>(animes);
         const int maxLength = 50;
-        foreach (var anime in animes)
+        foreach (var anime in animeViewModel)
         {
-            anime.Description = anime.Description!.Length > maxLength ? anime.Description[..maxLength] + "..." : anime.Description;
+            anime.Description = anime.Description!.Length > maxLength ? 
+                anime.Description[..maxLength] + "..." : anime.Description;
         }
-        var popularAnimeViewModel = mapper.Map<List<PopularAnimeViewModel>>(animes);
-        return popularAnimeViewModel;
+        return animeViewModel;
+    }
+
+    private static Task ShortDesc(List<HelloAnimeViewModel> list)
+    {
+        const int maxLength = 50;
+        foreach (var anime in list)
+        {
+            anime.Description = anime.Description!.Length > maxLength ? 
+                anime.Description[..maxLength] + "..." : anime.Description;
+        }
+        return Task.CompletedTask;
     }
 }

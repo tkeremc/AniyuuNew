@@ -1,4 +1,6 @@
 ﻿using Aniyuu.Models.AnimeModels;
+using Aniyuu.ViewModels;
+using Aniyuu.ViewModels.AdminAdViewModels;
 using Aniyuu.ViewModels.AnimeViewModels;
 using AutoMapper;
 
@@ -14,6 +16,12 @@ public class AnimeProfile :  Profile
         CreateMap<AnimeViewModel, AnimeModel>().ReverseMap();
         CreateMap<AnimeImageViewModel, AnimeModel>().ReverseMap();
         CreateMap<AnimeSearchResultViewModel, AnimeModel>().ReverseMap();
-        CreateMap<PopularAnimeViewModel, AnimeModel>().ReverseMap();
+        CreateMap<HelloAnimeViewModel, AnimeModel>().ReverseMap();
+
+        CreateMap<GenreViewModel, GenreModel>().ReverseMap();
+        CreateMap<StudioViewModel, StudioModel>().ReverseMap();
+
+        CreateMap<AnimeAdUpdateViewModel, AnimeAdModel>().ReverseMap();
+        CreateMap<AnimeAdViewModel, AnimeAdModel>().ReverseMap();
     }
 }

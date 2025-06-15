@@ -18,12 +18,15 @@ public class AnimeModel : BaseModel
     
     public int? EpisodeCount { get; set; }
     public int? SeasonCount { get; set; }
+    public List<int>? Seasons { get; set; }
+    
+    public int? SeasonNumber { get; set; }
     
     public List<MalGenre>? Genre { get; set; }
     public List<string>? Tags { get; set; }
     public string? Source { get; set; }
     
-    public DateTime? ReleaseDate { get; set; }
+    public string? ReleaseDate { get; set; }
     public string? Status { get; set; }
     
     public List<MalStudio>? Studios { get; set; }
@@ -37,8 +40,7 @@ public class AnimeModel : BaseModel
     public int? FavoriteCount { get; set; }
     
     public string? Slug { get; set; }
-
-    public string? BunnyLibraryId { get; set; }
+    
     public List<string>? TrailerLinks { get; set; }
     public bool IsActive { get; set; }
     

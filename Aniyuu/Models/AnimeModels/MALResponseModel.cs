@@ -127,8 +127,8 @@ public class MalRelatedAnimeEdge // related_anime listesindeki her bir öğe iç
     public MalAnimeNode? Node { get; set; }
 
     // Eğer MAL API'si "relation_type" gibi ek bilgiler de veriyorsa buraya eklenebilir:
-    // [JsonPropertyName("relation_type")]
-    // public string? RelationType { get; set; }
+    [JsonPropertyName("relation_type")]
+    public string? RelationType { get; set; }
     // [JsonPropertyName("relation_type_formatted")]
     // public string? RelationTypeFormatted { get; set; }
 }

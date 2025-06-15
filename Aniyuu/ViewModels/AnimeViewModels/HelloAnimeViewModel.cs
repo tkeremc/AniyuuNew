@@ -1,6 +1,6 @@
 namespace Aniyuu.ViewModels.AnimeViewModels;
 
-public class PopularAnimeViewModel
+public class HelloAnimeViewModel
 {
     public string? Title { get; set; }
     public string? Description { get; set; }

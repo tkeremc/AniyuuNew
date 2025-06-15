@@ -3,6 +3,7 @@ using Aniyuu.Exceptions;
 using Aniyuu.Helpers;
 using Aniyuu.Interfaces.AdminServices;
 using Aniyuu.Interfaces.AnimeInterfaces;
+using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models.AnimeModels;
 using Aniyuu.Utils;
 using MongoDB.Driver;
@@ -12,7 +13,8 @@ namespace Aniyuu.Services.AdminServices;
 
 public class AdminAnimeService(IMongoDbContext mongoDbContext,
     IHttpClientFactory httpClientFactory,
-    IAnimeService animeService) :  IAdminAnimeService
+    IAnimeService animeService,
+    ICurrentUserService currentUserService) :  IAdminAnimeService
 {
     private readonly IMongoCollection<AnimeModel> _animeCollection = mongoDbContext
         .GetCollection<AnimeModel>(AppSettingConfig.Configuration["MongoDBSettings:AnimeCollection"]!);
@@ -37,14 +39,15 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         }
         catch (Exception e)
         {
-            Logger.Error("[AnimeService.GetAll] Mongo query failed.");
+            Logger.Error("[AnimeService.GetAll] Mongo query failed. " + e.Message);
             throw new AppException("Mongo query failed.", 500);
         }
     }
 
-    public async Task<bool> Create(int malAnimeId, string backdropLink, List<string> tags, List<string> trailers,CancellationToken cancellationToken)
+    public async Task<bool> Create(int malAnimeId, string backdropLink, List<string> tags, List<string> trailers, CancellationToken cancellationToken, int mainAnimeMALId = 0)
     {
-        if (await IsAnimeExist(malAnimeId, cancellationToken)!)
+        Logger.Info("[AnimeService.Create] Anime adding started: " + malAnimeId);
+        if (await IsAnimeExist(malAnimeId, cancellationToken))
         {
             Logger.Error("[AnimeService.Create] Anime already exist.");
             throw new AppException("Anime already exist.", 409);
@@ -59,28 +62,49 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
                      GenreId = genre.Id,
                      GenreName = genre.Name,
                      Description = "not set"
-                 }))
-        {
-            _ = SaveGenre(genreModel, cancellationToken);
-        }
+                 })) _ = SaveGenre(genreModel, cancellationToken);
 
         foreach (var studioModel in newAnime.Studios!.Select(studio => new StudioModel
                  {
                      StudioId = studio.Id,
                      StudioName = studio.Name
-                 }))
+                 })) _ = SaveStudio(studioModel, cancellationToken);
+
+        var prequelAnime = malData.RelatedAnime.Find(x => x.RelationType == "prequel");
+        if (prequelAnime == null) throw new AppException("Prequel anime not found.", 404);
+        var prequelAnimeData = await GetMalData(prequelAnime.Node!.Id, cancellationToken);
+        if (!await IsAnimeExist(prequelAnimeData!.Id, cancellationToken))
         {
-            _ = SaveStudio(studioModel, cancellationToken);
+            if (prequelAnimeData.MediaType == "tv")
+            {
+                Logger.Error($"[AnimeService.Create] There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}");
+                throw new AppException($"There's an anime that needs to be added first. MalId: {prequelAnime.Node.Id}", 409);
+            }
+        }
+        else
+        {
+            var mainSeason = await animeService.Get(mainAnimeMALId, cancellationToken);
+            mainSeason.Seasons!.Add(newAnime.MALId!.Value);
+            await Update(mainSeason.MALId!.Value, mainSeason,cancellationToken);
         }
         
         try
         {
-            await _animeCollection.InsertOneAsync(newAnime, cancellationToken);
+            await _animeCollection.InsertOneAsync(newAnime, new InsertOneOptions(), cancellationToken);
         }
         catch (Exception e)
         {
-            Logger.Error("[AnimeService.Create] Mongo instert failed.");
+            Logger.Error("[AnimeService.Create] Mongo instert failed. " + e.Message);
             throw new AppException("Mongo insert failed.", 500);
+        }
+        
+        var sequelAnime = malData.RelatedAnime.Find(x => x.RelationType == "sequel");
+        if (sequelAnime == null) return true;
+        var sequelAnimeData = await GetMalData(sequelAnime.Node!.Id, cancellationToken);
+        
+        if (!await IsAnimeExist(sequelAnimeData!.Id, cancellationToken) && mainAnimeMALId != 0)
+        {
+            _ = Create(sequelAnime.Node.Id, "",[],[], cancellationToken, mainAnimeMALId);
         }
         
         return true;
@@ -117,14 +141,16 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
 
     public async Task<bool> Delete(int malId, CancellationToken cancellationToken)
     {
-        if (!await IsAnimeExist(malId,cancellationToken)!)
+        if (!await IsAnimeExist(malId,cancellationToken))
         {
             Logger.Error("[AnimeService.Delete] Anime not found.");
             throw new AppException("Anime not found.", 409);
         }
         var filter = Builders<AnimeModel>.Filter.And(Builders<AnimeModel>.Filter.Eq("MALId", malId),
             Builders<AnimeModel>.Filter.Eq("IsActive", true));
-        var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false);
+        var update = Builders<AnimeModel>.Update.Set(u => u.IsActive, false)
+            .Set(x => x.UpdatedAt, DateTime.UtcNow)
+            .Set(x => x.UpdatedBy, currentUserService.GetUserId());
         
         try
         {
@@ -149,16 +175,19 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
     {
         animeModel.Title = malModel.Title;
         animeModel.AlternativeTitles = malModel.AlternativeTitles;
-        animeModel.Description = await TranslateHelper.Translate(malModel.Synopsis);
+        animeModel.Description = await TranslateHelper.Translate(malModel.Synopsis!);
         animeModel.BannerLink = malModel.Pictures![0].Large;
         animeModel.BackdropLink = backdropLink;
-        animeModel.EpisodeCount = malModel.NumEpisodes;
+        animeModel.EpisodeCount = 0;
         animeModel.SeasonCount = 0;
         animeModel.Genre = malModel.Genres;
         animeModel.Tags ??= tags;
-        animeModel.ReleaseDate = Convert.ToDateTime(malModel.StartDate);
+        animeModel.ReleaseDate = malModel.StartDate;
         animeModel.Status = malModel.Status;
+        animeModel.Seasons ??= [];
+        animeModel.Seasons.Add(malModel.Id);
         animeModel.MALId = malModel.Id;
+        animeModel.SeasonNumber = 0;
         animeModel.MALScore = malModel.Mean;
         animeModel.MALRank = malModel.Rank;
         animeModel.MALRating = malModel.Rating;
@@ -166,8 +195,7 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
         animeModel.Source = malModel.Source;
         animeModel.ViewCount = 0;
         animeModel.FavoriteCount = 0;
-        animeModel.Slug = SlugHelper.FormatString(animeModel.Title);
-        animeModel.BunnyLibraryId = "423517";
+        animeModel.Slug = SlugHelper.FormatString(animeModel.Title!);
         animeModel.IsActive = true;
         animeModel.TrailerLinks ??= trailers;
     }
@@ -203,24 +231,17 @@ public class AdminAnimeService(IMongoDbContext mongoDbContext,
             throw new AppException("Api response exception occurred.", 404);
         }
     }
+    
 
     private async Task SaveGenre(GenreModel genreModel, CancellationToken cancellationToken)
     {
-        try
+        if (genreModel == null! || await _animeGenreCollection.Find(x => x.GenreId == genreModel.GenreId)
+                .AnyAsync(cancellationToken))
         {
-            if (genreModel == null! || await _animeGenreCollection.Find(x => x.GenreId == genreModel.GenreId)
-                    .AnyAsync(cancellationToken))
-            {
-                throw new AppException("Genre already exists or genreModel is null.", 409);
-            }
-
-            await _animeGenreCollection.InsertOneAsync(genreModel, cancellationToken);
+            throw new AppException("Genre already exists or genreModel is null.", 409);
         }
-        catch (Exception e)
-        {
-            Logger.Error($"[AnimeService.SaveGenre] Server problem: {e.Message}");
-            throw new AppException("Server error.", 500);
-        }
+        genreModel.GenreName = await TranslateHelper.Translate(genreModel.GenreName);
+        await _animeGenreCollection.InsertOneAsync(genreModel, new InsertOneOptions(), cancellationToken);
     }
 
     private async Task SaveStudio(StudioModel studioModel, CancellationToken cancellationToken)

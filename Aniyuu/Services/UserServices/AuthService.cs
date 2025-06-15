@@ -4,6 +4,7 @@ using Aniyuu.Exceptions;
 using Aniyuu.Interfaces;
 using Aniyuu.Interfaces.UserInterfaces;
 using Aniyuu.Models;
+using Aniyuu.Models.AnimeModels;
 using Aniyuu.Models.UserModels;
 using Aniyuu.Utils;
 using MongoDB.Driver;
@@ -23,6 +24,8 @@ public class AuthService(
         .GetCollection<UserModel>(AppSettingConfig.Configuration["MongoDBSettings:UserCollection"]!);
     private readonly IMongoCollection<PasswordTokenModel> _passTokenCollection = mongoDbContext
         .GetCollection<PasswordTokenModel>(AppSettingConfig.Configuration["MongoDBSettings:PasswordTokenCollection"]!);
+    private readonly IMongoCollection<WatchlistModel> _watchlistCollection = mongoDbContext
+        .GetCollection<WatchlistModel>(AppSettingConfig.Configuration["MongoDBSettings:WatchlistCollection"]!);
     
     public async Task<bool> Register(UserModel userModel, CancellationToken cancellationToken)
     {
@@ -44,7 +47,7 @@ public class AuthService(
         //fluent validation yapılmalı
         try
         {
-            await _userCollection.InsertOneAsync(userModel, cancellationToken);
+            await _userCollection.InsertOneAsync(userModel, new InsertOneOptions(), cancellationToken);
         }
         catch (Exception e)
         {
@@ -53,7 +56,7 @@ public class AuthService(
         }
         var code = await activationService.GenerateActivationCode(userModel.Email, cancellationToken);
         _ = emailService.SendWelcomeEmail(userModel.Email, userModel.Username, code ,cancellationToken);
-        
+        await CreateWatchlist(userModel.Username);
         return true;
     }
 
@@ -220,4 +223,20 @@ public class AuthService(
         userModel.WatchTime = 0;
         return Task.CompletedTask;
     }
+
+    private async Task CreateWatchlist(string username)
+    {
+        var user = await _userCollection.Find(x => x.Username == username).FirstOrDefaultAsync();
+        var watchlist = new WatchlistModel
+        {
+            AnimeMALIds = [],
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedBy = "system",
+            UserId = user.Id
+        };
+        
+        await _watchlistCollection.InsertOneAsync(watchlist, new InsertOneOptions());
+    }
+    
 }
