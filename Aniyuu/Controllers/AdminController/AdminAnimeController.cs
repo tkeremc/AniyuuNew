@@ -38,7 +38,8 @@ public class AdminAnimeController(IAdminAnimeService adminAnimeService,
             animeCreateViewModel.BackdropLink!,
             animeCreateViewModel.Tags,
             animeCreateViewModel.Trailers,
-            cancellationToken);
+            cancellationToken,
+            animeCreateViewModel.MalId);
     }
     
     [HttpDelete("delete")]

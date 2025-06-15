@@ -26,7 +26,7 @@ public class AnimeModel : BaseModel
     public List<string>? Tags { get; set; }
     public string? Source { get; set; }
     
-    public DateTime? ReleaseDate { get; set; }
+    public string? ReleaseDate { get; set; }
     public string? Status { get; set; }
     
     public List<MalStudio>? Studios { get; set; }
